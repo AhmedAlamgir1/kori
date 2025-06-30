@@ -108,7 +108,7 @@ const LandingPage = () => {
                 scale: 1.05,
                 boxShadow: "0 0 25px rgba(79, 70, 229, 0.6)"
               }}
-              className="bg-gradient-to-br from-indigo-800/40 to-indigo-600/20 backdrop-blur-sm border border-indigo-500/30 rounded-xl overflow-hidden cursor-pointer group h-[180px]"
+              className="card-width bg-gradient-to-br from-indigo-800/40 to-indigo-600/20 backdrop-blur-sm border border-indigo-500/30 rounded-xl overflow-hidden cursor-pointer group h-[180px]"
               onClick={() => { navigate(card.path); }}
             >
               <div className="p-4 flex flex-col h-full">

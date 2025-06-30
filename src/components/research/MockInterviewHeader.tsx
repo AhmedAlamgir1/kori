@@ -25,11 +25,11 @@ const MockInterviewHeader: React.FC<MockInterviewHeaderProps> = ({ profile, oppo
           </div>
           
           <div className="text-blue-200/80 space-y-4">
-            <div className="line-clamp-2">
+            <div>
               <span className="text-white font-medium">Background: </span>
               <span className="text-base">{profile.background}</span>
             </div>
-            <div className="line-clamp-2">
+            <div>
               <span className="text-white font-medium">Unique Perspective: </span>
               <span className="text-base">{profile.perspective}</span>
             </div>
