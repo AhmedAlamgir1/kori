@@ -128,6 +128,7 @@ export async function generateInterviewQuestions(
     // Extract and parse JSON
     const jsonMatch = responseText.match(/(\{[\s\S]*\})/);
     if (!jsonMatch) {
+      console.error("No JSON found in response:", responseText);
       throw new Error("Could not extract JSON from response");
     }
     
@@ -135,12 +136,20 @@ export async function generateInterviewQuestions(
     
     // Validate response format
     if (!Array.isArray(parsedResponse.questions) || parsedResponse.questions.length === 0) {
+      console.error("Invalid questions array:", parsedResponse.questions);
       throw new Error("Invalid response: Expected an array of questions");
     }
     
     if (!Array.isArray(parsedResponse.explanations) || 
         parsedResponse.explanations.length !== parsedResponse.questions.length) {
-      throw new Error("Invalid response: Explanations array missing or incorrect length");
+      console.error("Invalid explanations array:", parsedResponse.explanations);
+      console.error("Questions count:", parsedResponse.questions.length, "Explanations count:", parsedResponse.explanations?.length);
+      console.warn("Generating default explanations for questions");
+      
+      // Generate default explanations if missing or incorrect length
+      parsedResponse.explanations = parsedResponse.questions.map((_, index) => 
+        `Interview question ${index + 1} designed to gather insights for user research.`
+      );
     }
 
     // Check if categories exist, if not, we'll use the default categorization

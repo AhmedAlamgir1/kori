@@ -107,6 +107,13 @@ export const InterviewQuestionProvider: React.FC<InterviewQuestionProviderProps>
     fetchQuestions();
   }, [currentOpportunity, researchApproach]);
 
+  // Fetch questions when the selected profile changes
+  useEffect(() => {
+    if (selectedProfile) {
+      fetchQuestions(true);
+    }
+  }, [selectedProfile]);
+
   const addCustomQuestion = (newQuestion: QuestionWithExplanation) => {
     setQuestionsWithExplanations([...questionsWithExplanations, newQuestion]);
     toast.success("Custom question added");
