@@ -11,7 +11,9 @@ A complete Node.js backend application with authentication, JWT tokens, and Mong
 - 📝 Input validation with express-validator
 - 🗄️ MongoDB integration with Mongoose
 - 🤖 Gemini AI integration
-- 📊 Request logging with Morgan
+- �️ Image generation with Replicate AI
+- 📦 AWS S3 integration for image storage
+- �📊 Request logging with Morgan
 - 🔒 Account lockout after failed login attempts
 - 🍪 HTTP-only cookies for refresh tokens
 - 🔄 Token refresh mechanism

@@ -59,6 +59,26 @@ const userSchema = new mongoose.Schema(
     resetPasswordExpire: Date,
     emailVerificationToken: String,
     emailVerificationExpire: Date,
+    generatedImages: [
+      {
+        imageUrl: {
+          type: String,
+          required: true,
+        },
+        s3Key: {
+          type: String,
+          required: false, // Making this optional since we may store images only in Replicate
+        },
+        prompt: {
+          type: String,
+          required: true,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

@@ -1,6 +1,7 @@
 const express = require("express");
 const authRoutes = require("./auth");
 const chatRoutes = require("./chat");
+const imageRoutes = require("./image");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const ApiResponse = require("../utils/ApiResponse");
 const { authenticate, optionalAuth } = require("../middleware/auth");
@@ -28,6 +29,10 @@ router.get("/test", (req, res) => {
 router.use("/auth", authRoutes);
 
 // Chat routes
+router.use("/chat", chatRoutes);
+
+// Image routes
+router.use("/images", imageRoutes);
 router.use("/chats", chatRoutes);
 
 // Gemini AI endpoint (keeping your existing functionality, but with optional auth)
