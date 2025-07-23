@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RespondentProfile } from "./profile/types";
 import useProfileStore from "@/stores/useProfileStore";
+import profilepic from '../../assets/profile-pic.jpeg'
 
 interface QuestionsCardProps {
   questionsWithExplanations: QuestionWithExplanation[];
@@ -116,24 +117,32 @@ const QuestionsCard: React.FC<QuestionsCardProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="text-blue-200/80 space-y-4 text-base border-b border-slate-700 pb-4">
-          <p className="text-white text-base">
-            Respondent: {selectedProfile?.name}
-            <span className="mx-2">•</span>
-            {selectedProfile?.age} years old
-            <span className="mx-2">•</span>
-            {selectedProfile?.occupation}
-            <span className="mx-2">•</span>
-            on {opportunity}
-          </p>
-          <div>
-            <span className="text-white font-medium">Background: </span>
-            <span>{selectedProfile?.background}</span>
+        <div className="flex justify-between">
+          
+          <div className="profile-pic" style={{width: '20%'}}>
+            <img src={profilepic} alt="persona pic" className="rounded-sm" />
           </div>
-          <div>
-            <span className="text-white font-medium">Unique Perspective: </span>
-            <span>{selectedProfile?.perspective}</span>
-          </div>
+
+          <div className="text-blue-200/80 space-y-4 text-base border-b border-slate-700 pb-4" style={{width: '79%'}}>
+            <p className="text-white text-base">
+              Respondent: {selectedProfile?.name}
+              <span className="mx-2">•</span>
+              {selectedProfile?.age} years old
+              <span className="mx-2">•</span>
+              {selectedProfile?.occupation}
+              <span className="mx-2">•</span>
+              on {opportunity}
+            </p>
+            <div>
+              <span className="text-white font-medium">Background: </span>
+              <span>{selectedProfile?.background}</span>
+            </div>
+            <div>
+              <span className="text-white font-medium">Unique Perspective: </span>
+              <span>{selectedProfile?.perspective}</span>
+            </div>
+        </div>
+
         </div>
 
         <QuestionsList questions={questionsWithExplanations} />

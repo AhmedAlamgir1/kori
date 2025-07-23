@@ -12,6 +12,9 @@ import Understand from "./pages/Understand";
 import LockScreen from "./components/LockScreen";
 import MobileBlocker from "./components/MobileBlocker";
 import { useIsMobile } from "./hooks/useIsMobile";
+import Login from "./pages/login";
+import Signup from "./pages/Signup";
+import Dashboard from "./pages/dashboard";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +50,9 @@ const App = () => {
               <Route path="/" element={<Landing />} />
               <Route path="/innovate" element={<Index />} />
               <Route path="/understand" element={<Understand />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/Dashboard" element={<Dashboard />} />
               <Route path="/lead" element={<ComingSoon />} />
               <Route path="/briefs" element={<ComingSoon />} />
               <Route path="/design" element={<ComingSoon />} />

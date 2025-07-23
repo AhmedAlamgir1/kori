@@ -6,6 +6,7 @@ import { RespondentProfile } from "../profile/types";
 import { toast } from "sonner";
 import { navigateToTab } from "../ResearchDashboard";
 import useProfileStore from "@/stores/useProfileStore";
+import userpic from '../../../assets/profile-pic.jpeg'
 
 interface ProfileCardProps {
   profile: RespondentProfile;
@@ -95,8 +96,10 @@ Unique Perspective: ${profile.perspective}
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`rounded-full p-2 ${isSelected ? 'bg-indigo-400' : 'bg-indigo-600'}`}>
-              <UserRound className="h-6 w-6 text-white" />
+            <div className={`rounded-full p-1 ${isSelected ? 'bg-indigo-400' : 'bg-indigo-600'}`}>
+              {/* <UserRound className="h-10 w-10 text-white" /> */}
+              <img src={userpic} alt="" className="size-32 rounded-full" />
+
             </div>
             <div>
               <CardTitle className="text-white flex items-center gap-2">
