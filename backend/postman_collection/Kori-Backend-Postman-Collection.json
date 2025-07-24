@@ -11,7 +11,11 @@
     }
   },
   "item": [
+
     {
+      "name":"Ai End points",
+      "items":[
+        {
       "name": "Generate Image",
       "request": {
         "method": "POST",
@@ -91,6 +95,8 @@
         "description": "Delete a generated image associated with the authenticated user"
       },
       "response": []
+    }
+      ]
     },
     {
       "name": "Health & Status",
