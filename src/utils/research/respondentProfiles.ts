@@ -1,5 +1,7 @@
 import { toast } from "sonner";
 import { callChatGPTProxy } from "../api/geminiApi";
+import { generateProfileImage } from "../api/replicateApi";
+import { log } from "console";
 
 interface GenerationOptions {
   desiredAgeRange?: "teen" | "young adult" | "middle-aged" | "older";
@@ -8,12 +10,40 @@ interface GenerationOptions {
   occupationRoles?: string[];
 }
 
+export interface Profile {
+  name: string;
+  age: string;
+  occupation: string;
+  background: string;
+  perspective: string;
+  image?: string;
+  imageLoading?: boolean;
+}
+
+// Function to generate images for profiles concurrently
+async function generateImagesForProfiles(profiles: Profile[], onImageGenerated: (index: number, imageUrl: string) => void) {
+  const imagePromises = profiles.map(async (profile, index) => {
+    try {
+      const imageUrl = await generateProfileImage(profile.background, profile.name);
+      if (imageUrl) {
+        onImageGenerated(index, imageUrl);
+      }
+      return { index, success: true, imageUrl };
+    } catch (error) {
+      console.error(`Error generating image for ${profile.name}:`, error);
+      return { index, success: false, error };
+    }
+  });
+  await Promise.allSettled(imagePromises);
+}
+
 // Generate respondent profiles for user research
 export async function generateRespondentProfiles(
   opportunity: string, 
   researchApproach: "explorative" | "evaluative" = "explorative",
-  options?: GenerationOptions
-): Promise<any[]> {
+  options?: GenerationOptions,
+  onImageGenerated?: (index: number, imageUrl: string) => void
+): Promise<Profile[]> {
   try {
     const randomSeed = Math.random().toString(36).substring(2, 10);
     const timestamp = Date.now();
@@ -204,7 +234,17 @@ export async function generateRespondentProfiles(
     };
     
     validateDiversity(profiles);
-    return profiles;
+
+    // Add imageLoading state to all profiles
+    const profilesWithLoadingState = profiles.map(profile => ({
+      ...profile,
+      imageLoading: true
+    }));
+    if (onImageGenerated) {
+      generateImagesForProfiles(profilesWithLoadingState, onImageGenerated);
+    }
+
+    return profilesWithLoadingState;
   } catch (error) {
     console.error("Error generating respondent profiles:", error);
     toast.error("Failed to generate respondent profiles");

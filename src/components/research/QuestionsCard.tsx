@@ -120,7 +120,7 @@ const QuestionsCard: React.FC<QuestionsCardProps> = ({
         <div className="flex justify-between">
           
           <div className="profile-pic" style={{width: '20%'}}>
-            <img src={profilepic} alt="persona pic" className="rounded-sm" />
+            <img src={selectedProfile?.image} alt="persona pic" className="rounded-sm" />
           </div>
 
           <div className="text-blue-200/80 space-y-4 text-base border-b border-slate-700 pb-4" style={{width: '79%'}}>

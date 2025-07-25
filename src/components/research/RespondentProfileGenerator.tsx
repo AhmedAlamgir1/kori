@@ -48,7 +48,27 @@ const RespondentProfileGenerator: React.FC<RespondentProfileGeneratorProps> = ({
     selectProfile(null); // Clear selected profile
     
     try {
-      const generatedProfiles = await generateRespondentProfiles(opportunity, researchApproach);
+      // Callback function to handle when images are generated
+      const handleImageGenerated = (index: number, imageUrl: string) => {
+        setProfiles(prevProfiles => {
+          const updatedProfiles = [...prevProfiles];
+          if (updatedProfiles[index]) {
+            updatedProfiles[index] = {
+              ...updatedProfiles[index],
+              image: imageUrl,
+              imageLoading: false
+            };
+          }
+          return updatedProfiles;
+        });
+      };
+      const generatedProfiles = await generateRespondentProfiles(
+        opportunity, 
+        researchApproach, 
+        undefined,
+        handleImageGenerated
+      );
+      
       setProfiles(generatedProfiles);
       decrementRegenerations();
       if (regenerationsLeft <= 1) {

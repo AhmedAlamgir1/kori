@@ -97,9 +97,28 @@ Unique Perspective: ${profile.perspective}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`rounded-full p-1 ${isSelected ? 'bg-indigo-400' : 'bg-indigo-600'}`}>
-              {/* <UserRound className="h-10 w-10 text-white" /> */}
-              <img src={userpic} alt="" className="size-32 rounded-full" />
-
+              {profile.imageLoading ? (
+                <div className="size-32 rounded-full bg-slate-700 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400"></div>
+                </div>
+              ) : profile.image ? (
+                <img 
+                  src={profile.image} 
+                  alt={`${profile.name}'s profile picture`} 
+                  className="size-32 rounded-full object-cover"
+                  onError={(e) => {
+                    // Fallback to default image if generated image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.src = userpic;
+                  }}
+                />
+              ) : (
+                <img 
+                  src={userpic} 
+                  alt={`${profile.name}'s profile picture`} 
+                  className="size-32 rounded-full object-cover"
+                />
+              )}
             </div>
             <div>
               <CardTitle className="text-white flex items-center gap-2">
