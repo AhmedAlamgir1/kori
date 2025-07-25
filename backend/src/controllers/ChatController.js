@@ -6,14 +6,20 @@ class ChatController {
   // Create a new chat
   static async createChat(req, res, next) {
     try {
-      const userId = req.user._id;
       const { title, settings } = req.body;
 
-      const chat = await ChatService.createChat({
-        userId,
-        title,
-        settings,
-      });
+      let chat;
+
+      if (req.user) {
+        console.log("req.user", req.user);
+        const userId = req.user ? req.user._id : null;
+
+        chat = await ChatService.createChat({
+          userId,
+          title,
+          settings,
+        });
+      }
 
       const response = ApiResponse.success(
         "Chat created successfully",
@@ -30,8 +36,13 @@ class ChatController {
   // Get all user's chats
   static async getUserChats(req, res, next) {
     try {
-      const userId = req.user._id;
+      const userId = req.user ? req.user._id : null;
+
       const { status = "active", page = 1, limit = 10 } = req.query;
+      // Ensure userId is provided (authentication required)
+      if (!userId) {
+        return next(new ApiError("Authentication is required", 401));
+      }
 
       const chats = await ChatService.getUserChats({
         userId,
@@ -80,6 +91,13 @@ class ChatController {
       const userId = req.user._id;
       const { chatId } = req.params;
       const { message } = req.body;
+
+      // Debug logging to help identify the issue
+      console.log(
+        "ChatController.sendMessage - Raw message:",
+        typeof message,
+        message
+      );
 
       const result = await ChatService.sendMessage({
         chatId,
@@ -261,18 +279,187 @@ class ChatController {
   // Get user's chat dashboard data
   static async getDashboard(req, res, next) {
     try {
-      const userId = req.user._id;
-      const { days = 7 } = req.query;
+      const userId = req.user ? req.user._id : null;
+
+      // Ensure either userId or sessionId is provided
+      if (!userId) {
+        return next(
+          new ApiError("Either authentication or sessionId is required", 400)
+        );
+      }
+      const days = req.params.days ? parseInt(req.params.days) : 30; // Default to 30 days if not specified
+      console.log("req.params.days", days);
 
       const dashboardData = await ChatService.getDashboardData({
         userId,
-        days: parseInt(days),
+        days,
       });
 
       const response = ApiResponse.success(
         "Dashboard data retrieved successfully",
         dashboardData
       );
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Add a prompt to a chat
+  static async addPrompt(req, res, next) {
+    try {
+      const { chatId } = req.params;
+
+      // Ensure either userId or sessionId is provided
+      if (!req.user) {
+        const response = ApiResponse.success("Prompt added successfully", 201);
+
+        res.status(response.statusCode).json(response);
+      }
+      const promptData = { ...req.body, userId: req.userId };
+      const userId = req.user ? req.user._id : null;
+      if (!userId) {
+        return next(
+          new ApiError("Either authentication or sessionId is required", 400)
+        );
+      }
+
+      const prompt = await ChatService.addPrompt({
+        chatId,
+        userId,
+        promptData,
+      });
+
+      const response = ApiResponse.success(
+        "Prompt added successfully",
+        { prompt },
+        201
+      );
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get all prompts in a chat
+  static async getChatPrompts(req, res, next) {
+    try {
+      const userId = req.user ? req.user._id : null;
+      const { chatId } = req.params;
+
+      // Ensure either userId or sessionId is provided
+      if (!userId && !sessionId) {
+        return next(
+          new ApiError("Either authentication or sessionId is required", 400)
+        );
+      }
+
+      const prompts = await ChatService.getChatPrompts({
+        chatId,
+        userId,
+        sessionId,
+        category,
+        page: parseInt(page),
+        limit: parseInt(limit),
+      });
+
+      const response = ApiResponse.success(
+        "Prompts retrieved successfully",
+        prompts
+      );
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get specific prompt by ID
+  static async getPromptById(req, res, next) {
+    try {
+      const userId = req.user ? req.user._id : null;
+      const { chatId, promptId } = req.params;
+
+      // Ensure either userId or sessionId is provided
+      if (!userId && !sessionId) {
+        return next(
+          new ApiError("Either authentication or sessionId is required", 400)
+        );
+      }
+
+      const prompt = await ChatService.getPromptById({
+        chatId,
+        promptId,
+        userId,
+        sessionId,
+      });
+
+      const response = ApiResponse.success("Prompt retrieved successfully", {
+        prompt,
+      });
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Update a prompt
+  static async updatePrompt(req, res, next) {
+    try {
+      const userId = req.user ? req.user._id : null;
+      const { chatId, promptId } = req.params;
+
+      const updateData = req.body;
+
+      // Ensure either userId or sessionId is provided
+      if (!userId && !sessionId) {
+        return next(
+          new ApiError("Either authentication or sessionId is required", 400)
+        );
+      }
+
+      const prompt = await ChatService.updatePrompt({
+        chatId,
+        promptId,
+        userId,
+        sessionId,
+        updateData,
+      });
+
+      const response = ApiResponse.success("Prompt updated successfully", {
+        prompt,
+      });
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Delete/deactivate a prompt
+  static async deletePrompt(req, res, next) {
+    try {
+      const userId = req.user ? req.user._id : null;
+      const { chatId, promptId } = req.params;
+
+      // Ensure either userId or sessionId is provided
+      if (!userId && !sessionId) {
+        return next(
+          new ApiError("Either authentication or sessionId is required", 400)
+        );
+      }
+
+      await ChatService.deletePrompt({
+        chatId,
+        promptId,
+        userId,
+        sessionId,
+      });
+
+      const response = ApiResponse.success("Prompt deleted successfully");
 
       res.status(response.statusCode).json(response);
     } catch (error) {

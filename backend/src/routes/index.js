@@ -33,7 +33,6 @@ router.use("/chat", chatRoutes);
 
 // Image routes
 router.use("/images", imageRoutes);
-router.use("/chats", chatRoutes);
 
 // Gemini AI endpoint (keeping your existing functionality, but with optional auth)
 router.post("/gemini", optionalAuth, async (req, res, next) => {

@@ -1,22 +1,28 @@
 const express = require("express");
 const ChatController = require("../controllers/ChatController");
-const { authenticate } = require("../middleware/auth");
 const { chatRateLimiter } = require("../middleware/security");
+const { authenticate, optionalAuth } = require("../middleware/auth");
+
 const {
   createChatValidation,
   sendMessageValidation,
   addMessageValidation,
+  addPromptValidation,
   updateChatValidation,
   getChatValidation,
+  getPromptValidation,
+  getPromptsValidation,
   searchMessagesValidation,
   exportChatValidation,
+  getUserChatsValidation,
+  getDashboardValidation,
   handleValidationErrors,
 } = require("../validators/chatValidators");
 
 const router = express.Router();
 
-// All chat routes require authentication
-router.use(authenticate);
+// Apply authentication to all routes (authentication required)
+// router.use(authenticate);
 
 // Chat management routes
 router.post(
@@ -24,12 +30,25 @@ router.post(
   chatRateLimiter,
   createChatValidation,
   handleValidationErrors,
+  authenticate,
   ChatController.createChat
 );
 
-router.get("/", ChatController.getUserChats);
+router.get(
+  "/",
+  getUserChatsValidation,
+  handleValidationErrors,
+  authenticate,
+  ChatController.getUserChats
+);
 
-router.get("/dashboard", ChatController.getDashboard);
+router.get(
+  "/dashboard",
+  getDashboardValidation,
+  authenticate,
+  handleValidationErrors,
+  ChatController.getDashboard
+);
 
 router.get(
   "/:chatId",
@@ -53,10 +72,55 @@ router.delete(
   ChatController.deleteChat
 );
 
+// Prompt management routes
+router.post(
+  "/:chatId/prompts",
+  chatRateLimiter,
+  getChatValidation,
+  // addPromptValidation,
+  // handleValidationErrors,
+  authenticate,
+  ChatController.addPrompt
+);
+
+router.get(
+  "/:chatId/prompts",
+  getChatValidation,
+  getPromptsValidation,
+  handleValidationErrors,
+  ChatController.getChatPrompts
+);
+
+router.get(
+  "/:chatId/prompts/:promptId",
+  getChatValidation,
+  getPromptValidation,
+  handleValidationErrors,
+  ChatController.getPromptById
+);
+
+router.patch(
+  "/:chatId/prompts/:promptId",
+  getChatValidation,
+  getPromptValidation,
+  addPromptValidation,
+  handleValidationErrors,
+  ChatController.updatePrompt
+);
+
+router.delete(
+  "/:chatId/prompts/:promptId",
+  getChatValidation,
+  getPromptValidation,
+  handleValidationErrors,
+  ChatController.deletePrompt
+);
+
 // Message management routes
 router.post(
   "/:chatId/messages",
   chatRateLimiter,
+  authenticate,
   getChatValidation,
   sendMessageValidation,
   handleValidationErrors,
@@ -68,6 +132,7 @@ router.post(
   getChatValidation,
   addMessageValidation,
   handleValidationErrors,
+  authenticate,
   ChatController.addMessage
 );
 

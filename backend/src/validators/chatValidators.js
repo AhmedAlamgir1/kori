@@ -1,6 +1,7 @@
 const { body, param, query, validationResult } = require("express-validator");
 const ApiResponse = require("../utils/ApiResponse");
 const mongoose = require("mongoose");
+const { MESSAGE_ROLES } = require("../constants/messageRoles");
 
 // Create chat validation
 const createChatValidation = [
@@ -9,31 +10,82 @@ const createChatValidation = [
     .trim()
     .isLength({ min: 1, max: 200 })
     .withMessage("Chat title must be between 1 and 200 characters"),
+];
 
-  body("settings")
-    .optional()
-    .isObject()
-    .withMessage("Settings must be an object"),
+// Add prompt validation
+const addPromptValidation = [
+  body("imageUrl")
+    .notEmpty()
+    .withMessage("Image URL is required")
+    .isURL()
+    .withMessage("Invalid image URL format")
+    .matches(/\.(jpg|jpeg|png|gif|webp)$/i)
+    .withMessage("Image URL must end with a valid image extension"),
 
-  body("settings.maxMessages")
-    .optional()
-    .isInt({ min: 1, max: 500 })
-    .withMessage("Max messages must be between 1 and 500"),
+  body("background")
+    .trim()
+    .notEmpty()
+    .withMessage("Background story is required")
+    .isLength({ min: 10, max: 2000 })
+    .withMessage("Background must be between 10 and 2,000 characters"),
 
-  body("settings.autoArchive")
+  body("category")
+    .isIn([
+      "professional",
+      "creative",
+      "educational",
+      "entertainment",
+      "wellness",
+      "technology",
+      "business",
+      "lifestyle",
+      "other",
+    ])
+    .withMessage("Category must be one of the predefined values"),
+
+  body("initialPrompt")
+    .trim()
+    .notEmpty()
+    .withMessage("Initial prompt is required")
+    .isLength({ min: 5, max: 1000 })
+    .withMessage("Initial prompt must be between 5 and 1,000 characters"),
+
+  body("profile.name")
+    .trim()
+    .notEmpty()
+    .withMessage("Profile name is required")
+    .isLength({ min: 1, max: 100 })
+    .withMessage("Name must be between 1 and 100 characters"),
+
+  body("profile.designation")
+    .trim()
+    .notEmpty()
+    .withMessage("Designation is required")
+    .isLength({ min: 1, max: 150 })
+    .withMessage("Designation must be between 1 and 150 characters"),
+
+  body("profile.age")
+    .isInt({ min: 18, max: 100 })
+    .withMessage("Age must be between 18 and 100"),
+
+  body("profile.uniquePerspective")
+    .trim()
+    .notEmpty()
+    .withMessage("Unique perspective is required")
+    .isLength({ min: 10, max: 500 })
+    .withMessage("Unique perspective must be between 10 and 500 characters"),
+
+  body("isActive")
     .optional()
     .isBoolean()
-    .withMessage("Auto archive must be a boolean"),
-
-  body("settings.autoArchiveDays")
-    .optional()
-    .isInt({ min: 1, max: 365 })
-    .withMessage("Auto archive days must be between 1 and 365"),
+    .withMessage("isActive must be a boolean"),
 ];
 
 // Send message validation
 const sendMessageValidation = [
   body("message")
+    .isString()
+    .withMessage("Message must be a string")
     .trim()
     .notEmpty()
     .withMessage("Message content is required")
@@ -44,8 +96,8 @@ const sendMessageValidation = [
 // Add message validation (for manual message addition)
 const addMessageValidation = [
   body("role")
-    .isIn(["user", "assistant", "system"])
-    .withMessage("Role must be 'user', 'assistant', or 'system'"),
+    .isIn(MESSAGE_ROLES)
+    .withMessage(`Role must be one of: ${MESSAGE_ROLES.join(", ")}`),
 
   body("content")
     .trim()
@@ -182,6 +234,44 @@ const getDashboardValidation = [
     .withMessage("Days must be between 1 and 365"),
 ];
 
+// Get prompts validation
+const getPromptsValidation = [
+  query("category")
+    .optional()
+    .isIn([
+      "professional",
+      "creative",
+      "educational",
+      "entertainment",
+      "wellness",
+      "technology",
+      "business",
+      "lifestyle",
+      "other",
+    ])
+    .withMessage("Category must be one of the predefined values"),
+
+  query("page")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Page must be a positive integer"),
+
+  query("limit")
+    .optional()
+    .isInt({ min: 1, max: 50 })
+    .withMessage("Limit must be between 1 and 50"),
+];
+
+// Prompt ID validation
+const getPromptValidation = [
+  param("promptId").custom((value) => {
+    if (!mongoose.Types.ObjectId.isValid(value)) {
+      throw new Error("Invalid prompt ID format");
+    }
+    return true;
+  }),
+];
+
 // Handle validation errors middleware
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
@@ -203,8 +293,11 @@ module.exports = {
   createChatValidation,
   sendMessageValidation,
   addMessageValidation,
+  addPromptValidation,
   updateChatValidation,
   getChatValidation,
+  getPromptValidation,
+  getPromptsValidation,
   searchMessagesValidation,
   exportChatValidation,
   getUserChatsValidation,
