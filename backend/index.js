@@ -127,7 +127,17 @@ if (!process.env.OPENAI_API_KEY) {
 // Middleware
 app.use(securityMiddleware); // Security headers with Helmet
 app.use(requestLogger); // Request logging
-app.use(cors()); // Enables Cross-Origin Resource Sharing (for frontend to talk to backend)
+
+// CORS configuration to allow all origins
+app.use(
+  cors({
+    origin: "*", // Allow all origins
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    credentials: false, // Set to false when origin is '*'
+  })
+); // Enables Cross-Origin Resource Sharing (for frontend to talk to backend)
+
 app.use(express.json()); // Parses incoming JSON requests
 app.use(cookieParser()); // Parse cookies
 app.use(apiRateLimiter); // Apply rate limiting to all API routes
