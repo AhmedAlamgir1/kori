@@ -1,12 +1,11 @@
 {
   "info": {
     "name": "Kori Backend API Collection",
-
-    "description": "Complete Postman collection for testing all Kori backend API endpoints including updated chat and message management",
+    "description": "Complete Postman collection for testing all Kori backend API endpoints including authentication, chat management, message handling, image generation, and more",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_postman_id": "kori-backend-api-v2",
+    "_postman_id": "kori-backend-api-complete-v3",
     "version": {
-      "major": 2,
+      "major": 3,
       "minor": 0,
       "patch": 0
     }
@@ -14,11 +13,16 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3000",
+      "value": "http://localhost:3002",
       "type": "string"
     },
     {
       "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
       "value": "",
       "type": "string"
     },
@@ -38,14 +42,52 @@
       "type": "string"
     },
     {
+      "key": "threadId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "messageId",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "imageId",
       "value": "",
       "type": "string"
     }
   ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
   "item": [
     {
-      "name": "Authentication",
+      "name": "🧪 Health Check",
+      "item": [
+        {
+          "name": "Test Server Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/test",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "test"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔐 Authentication",
       "item": [
         {
           "name": "Register User",
@@ -59,23 +101,33 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fullName\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"SecurePassword123!\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "raw": "{\n  \"fullName\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"password123\",\n  \"confirmPassword\": \"password123\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/register",
               "host": ["{{baseUrl}}"],
               "path": ["api", "auth", "register"]
-            },
-            "description": "Register a new user account"
-          }
+            }
+          },
+          "response": []
         },
         {
           "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', response.data.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', response.data.refreshToken);",
+                  "    pm.collectionVariables.set('userId', response.data.user._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -86,20 +138,15 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"SecurePassword123!\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"password123\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
               "host": ["{{baseUrl}}"],
               "path": ["api", "auth", "login"]
-            },
-            "description": "Login with email and password"
-          }
+            }
+          },
+          "response": []
         },
         {
           "name": "Refresh Token",
@@ -113,189 +160,264 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"refreshToken\": \"your_refresh_token_here\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/auth/refresh",
+              "raw": "{{baseUrl}}/api/auth/refresh-token",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "refresh"]
-            },
-            "description": "Refresh access token using refresh token"
-          }
+              "path": ["api", "auth", "refresh-token"]
+            }
+          },
+          "response": []
         },
         {
-          "name": "Logout User",
+          "name": "Get Profile",
           "request": {
-            "method": "POST",
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "profile"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
+                "key": "Content-Type",
+                "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/logout",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "logout"]
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"John Updated Doe\",\n  \"email\": \"john.updated@example.com\"\n}"
             },
-            "description": "Logout and invalidate tokens"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Chat Management",
-      "item": [
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "profile"]
+            }
+          },
+          "response": []
+        },
         {
-          "name": "Create Chat",
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newpassword123\",\n  \"confirmNewPassword\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "change-password"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"My AI Assistant Chat\",\n  \"initialPrompt\": \"You are a helpful AI assistant that provides detailed and accurate information.\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "raw": "{\n  \"email\": \"john.doe@example.com\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/chats",
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats"]
-            },
-            "description": "Create a new chat with optional initial prompt"
-          }
+              "path": ["api", "auth", "forgot-password"]
+            }
+          },
+          "response": []
         },
         {
-          "name": "Get User Chats",
+          "name": "Reset Password",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
+                "key": "Content-Type",
+                "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset-token-here\",\n  \"newPassword\": \"newpassword123\",\n  \"confirmNewPassword\": \"newpassword123\"\n}"
+            },
             "url": {
-              "raw": "{{baseUrl}}/api/chats?status=active&page=1&limit=10",
+              "raw": "{{baseUrl}}/api/auth/reset-password",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats"],
+              "path": ["api", "auth", "reset-password"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "💬 Chat Management",
+      "item": [
+        {
+          "name": "Create Chat",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('chatId', response.data.chat._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"My First Chat\",\n  \"initialPrompt\": \"You are a helpful assistant\",\n  \"settings\": {\n    \"maxMessages\": 100,\n    \"autoArchive\": false,\n    \"autoArchiveDays\": 30\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Chats (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat?status=active&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat"],
               "query": [
                 {
                   "key": "status",
-                  "value": "active",
-                  "description": "Filter by chat status (active, archived, deleted)"
+                  "value": "active"
                 },
                 {
                   "key": "page",
-                  "value": "1",
-                  "description": "Page number for pagination"
+                  "value": "1"
                 },
                 {
                   "key": "limit",
-                  "value": "10",
-                  "description": "Number of chats per page"
+                  "value": "10"
                 }
               ]
-            },
-            "description": "Get all chats for the authenticated user with pagination"
-          }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All User Chats with Complete Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/all-with-data?status=active",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "all-with-data"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active"
+                }
+              ]
+            }
+          },
+          "response": []
         },
         {
           "name": "Search Chats by Initial Prompt",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/chats/search/initial-prompt?q=assistant&limit=10",
+              "raw": "{{baseUrl}}/api/chat/search/initial-prompt?q=assistant&limit=10",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "search", "initial-prompt"],
+              "path": ["api", "chat", "search", "initial-prompt"],
               "query": [
                 {
                   "key": "q",
-                  "value": "assistant",
-                  "description": "Search query to match against initial prompts"
+                  "value": "assistant"
                 },
                 {
                   "key": "limit",
-                  "value": "10",
-                  "description": "Maximum number of results"
+                  "value": "10"
                 }
               ]
-            },
-            "description": "Search chats by their initial prompt content"
-          }
+            }
+          },
+          "response": []
         },
         {
           "name": "Get Dashboard Data",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/chats/dashboard?days=30",
+              "raw": "{{baseUrl}}/api/chat/dashboard",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "dashboard"],
-              "query": [
-                {
-                  "key": "days",
-                  "value": "30",
-                  "description": "Number of days to include in dashboard data"
-                }
-              ]
-            },
-            "description": "Get dashboard analytics for user's chats"
-          }
+              "path": ["api", "chat", "dashboard"]
+            }
+          },
+          "response": []
         },
         {
           "name": "Get Chat by ID",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/chats/{{chatId}}?includeMessages=true",
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "{{chatId}}"],
-              "query": [
-                {
-                  "key": "includeMessages",
-                  "value": "true",
-                  "description": "Whether to include message data"
-                }
-              ]
-            },
-            "description": "Get a specific chat by its ID"
-          }
+              "path": ["api", "chat", "{{chatId}}"]
+            }
+          },
+          "response": []
         },
         {
           "name": "Update Chat",
@@ -305,51 +427,69 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Updated Chat Title\",\n  \"initialPrompt\": \"You are an updated AI assistant with enhanced capabilities.\",\n  \"status\": \"active\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "raw": "{\n  \"title\": \"Updated Chat Title\",\n  \"status\": \"active\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/chats/{{chatId}}",
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "{{chatId}}"]
-            },
-            "description": "Update chat details including title, initial prompt, and status"
-          }
+              "path": ["api", "chat", "{{chatId}}"]
+            }
+          },
+          "response": []
         },
         {
           "name": "Delete Chat",
           "request": {
             "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/chats/{{chatId}}",
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "{{chatId}}"]
-            },
-            "description": "Soft delete a chat (marks as deleted)"
-          }
+              "path": ["api", "chat", "{{chatId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Chat Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/statistics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "{{chatId}}", "statistics"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Export Chat",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/export?format=json",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "{{chatId}}", "export"],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "json"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
     {
-      "name": "Initial Prompt Management",
+      "name": "📝 Initial Prompt Management",
       "item": [
         {
           "name": "Update Initial Prompt",
@@ -359,135 +499,112 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"initialPrompt\": \"You are a specialized AI assistant focused on providing technical guidance and detailed explanations.\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "raw": "{\n  \"initialPrompt\": \"You are a creative writing assistant specializing in storytelling\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/chats/{{chatId}}/initial-prompt",
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/initial-prompt",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "{{chatId}}", "initial-prompt"]
-            },
-            "description": "Update the initial prompt for a specific chat"
-          }
+              "path": ["api", "chat", "{{chatId}}", "initial-prompt"]
+            }
+          },
+          "response": []
         },
         {
           "name": "Remove Initial Prompt",
           "request": {
             "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/chats/{{chatId}}/initial-prompt",
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/initial-prompt",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "{{chatId}}", "initial-prompt"]
-            },
-            "description": "Remove the initial prompt from a chat"
-          }
+              "path": ["api", "chat", "{{chatId}}", "initial-prompt"]
+            }
+          },
+          "response": []
         }
       ]
     },
     {
-      "name": "Prompt Management",
+      "name": "🎯 Prompt Management",
       "item": [
         {
           "name": "Add Prompt to Chat",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('promptId', response.data.prompt._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"imageUrl\": \"https://example.com/character.jpg\",\n  \"background\": \"You are a knowledgeable software engineer with 10 years of experience in full-stack development.\",\n  \"category\": \"professional\",\n  \"profile\": {\n    \"name\": \"Alex Developer\",\n    \"designation\": \"Senior Software Engineer\",\n    \"age\": 32,\n    \"uniquePerspective\": \"Specializes in scalable web applications and clean code practices.\"\n  },\n  \"isActive\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "raw": "{\n  \"imageUrl\": \"https://example.com/avatar.jpg\",\n  \"background\": \"You are a helpful coding assistant\",\n  \"category\": \"technology\",\n  \"profile\": {\n    \"name\": \"Code Helper\",\n    \"description\": \"I help with programming questions\",\n    \"personality\": \"friendly and knowledgeable\"\n  }\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/chats/{{chatId}}/prompts",
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/prompts",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "{{chatId}}", "prompts"]
-            },
-            "description": "Add a character prompt to a chat"
-          }
+              "path": ["api", "chat", "{{chatId}}", "prompts"]
+            }
+          },
+          "response": []
         },
         {
           "name": "Get Chat Prompts",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/chats/{{chatId}}/prompts?category=professional&page=1&limit=10",
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/prompts?category=technology&page=1&limit=10",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "{{chatId}}", "prompts"],
+              "path": ["api", "chat", "{{chatId}}", "prompts"],
               "query": [
                 {
                   "key": "category",
-                  "value": "professional",
-                  "description": "Filter prompts by category"
+                  "value": "technology"
                 },
                 {
                   "key": "page",
-                  "value": "1",
-                  "description": "Page number"
+                  "value": "1"
                 },
                 {
                   "key": "limit",
-                  "value": "10",
-                  "description": "Results per page"
+                  "value": "10"
                 }
               ]
-            },
-            "description": "Get all prompts for a chat with optional filtering"
-          }
+            }
+          },
+          "response": []
         },
         {
           "name": "Get Prompt by ID",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/chats/{{chatId}}/prompts/{{promptId}}",
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/prompts/{{promptId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "{{chatId}}", "prompts", "{{promptId}}"]
-            },
-            "description": "Get a specific prompt by ID"
-          }
+              "path": ["api", "chat", "{{chatId}}", "prompts", "{{promptId}}"]
+            }
+          },
+          "response": []
         },
         {
           "name": "Update Prompt",
@@ -497,331 +614,271 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"background\": \"Updated background for the character with more specific expertise.\",\n  \"category\": \"technology\",\n  \"profile\": {\n    \"name\": \"Alex Senior Developer\",\n    \"designation\": \"Lead Software Architect\",\n    \"age\": 33,\n    \"uniquePerspective\": \"Expert in microservices architecture and DevOps practices.\"\n  },\n  \"isActive\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "raw": "{\n  \"background\": \"Updated: You are an expert coding assistant\",\n  \"profile\": {\n    \"name\": \"Senior Code Helper\",\n    \"description\": \"I help with advanced programming questions\"\n  }\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/chats/{{chatId}}/prompts/{{promptId}}",
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/prompts/{{promptId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "{{chatId}}", "prompts", "{{promptId}}"]
-            },
-            "description": "Update an existing prompt"
-          }
+              "path": ["api", "chat", "{{chatId}}", "prompts", "{{promptId}}"]
+            }
+          },
+          "response": []
         },
         {
           "name": "Delete Prompt",
           "request": {
             "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/chats/{{chatId}}/prompts/{{promptId}}",
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/prompts/{{promptId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "{{chatId}}", "prompts", "{{promptId}}"]
-            },
-            "description": "Deactivate/delete a prompt"
-          }
+              "path": ["api", "chat", "{{chatId}}", "prompts", "{{promptId}}"]
+            }
+          },
+          "response": []
         }
       ]
     },
     {
-      "name": "Message Management",
+      "name": "💌 Message Management",
       "item": [
         {
           "name": "Send Message",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data.userMessage) {",
+                  "        pm.collectionVariables.set('messageId', response.data.userMessage._id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"message\": \"Hello! Can you help me understand the difference between REST and GraphQL APIs?\",\n  \"promptId\": \"{{promptId}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "raw": "{\n  \"promptId\": \"{{promptId}}\",\n  \"threadId\": \"{{threadId}}\",\n  \"message\": \"Hello, can you help me with JavaScript?\",\n  \"model\": \"gpt-4o-mini\",\n  \"temperature\": 0.7\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/chats/{{chatId}}/messages",
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/messages",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "{{chatId}}", "messages"]
-            },
-            "description": "Send a message to a specific prompt in a chat"
-          }
+              "path": ["api", "chat", "{{chatId}}", "messages"]
+            }
+          },
+          "response": []
         },
         {
-          "name": "Add Message Manually",
+          "name": "Add Message to Chat",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"role\": \"assistant\",\n  \"content\": \"REST and GraphQL are both API design paradigms, but they differ in several key ways...\",\n  \"promptId\": \"{{promptId}}\",\n  \"metadata\": {\n    \"tokenCount\": 150,\n    \"processingTime\": 1200,\n    \"model\": \"gpt-4\"\n  }\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "raw": "{\n  \"promptId\": \"{{promptId}}\",\n  \"threadId\": \"{{threadId}}\",\n  \"role\": \"user\",\n  \"content\": \"This is a manually added message\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/chats/{{chatId}}/messages/add",
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/messages/add",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "{{chatId}}", "messages", "add"]
-            },
-            "description": "Manually add a message (user, assistant, or system) to a chat"
-          }
+              "path": ["api", "chat", "{{chatId}}", "messages", "add"]
+            }
+          },
+          "response": []
         },
         {
-          "name": "Get Messages",
+          "name": "Get Chat Messages",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/chats/{{chatId}}/messages?promptId={{promptId}}&page=1&limit=20",
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/messages?promptId={{promptId}}&page=1&limit=20",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "{{chatId}}", "messages"],
+              "path": ["api", "chat", "{{chatId}}", "messages"],
               "query": [
                 {
                   "key": "promptId",
-                  "value": "{{promptId}}",
-                  "description": "Filter messages by prompt ID (optional)"
+                  "value": "{{promptId}}"
                 },
                 {
                   "key": "page",
-                  "value": "1",
-                  "description": "Page number for pagination"
+                  "value": "1"
                 },
                 {
                   "key": "limit",
-                  "value": "20",
-                  "description": "Number of message threads per page"
+                  "value": "20"
                 }
               ]
-            },
-            "description": "Get messages for a chat, optionally filtered by prompt"
-          }
+            }
+          },
+          "response": []
         },
         {
-          "name": "Search Messages",
+          "name": "Search Messages in Chat",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/chats/{{chatId}}/messages/search?query=GraphQL&promptId={{promptId}}&page=1&limit=10",
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/messages/search?query=JavaScript&page=1&limit=20&promptId={{promptId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "{{chatId}}", "messages", "search"],
+              "path": ["api", "chat", "{{chatId}}", "messages", "search"],
               "query": [
                 {
                   "key": "query",
-                  "value": "GraphQL",
-                  "description": "Search term to find in message content"
-                },
-                {
-                  "key": "promptId",
-                  "value": "{{promptId}}",
-                  "description": "Filter search within specific prompt (optional)"
+                  "value": "JavaScript"
                 },
                 {
                   "key": "page",
-                  "value": "1",
-                  "description": "Page number"
+                  "value": "1"
                 },
                 {
                   "key": "limit",
-                  "value": "10",
-                  "description": "Results per page"
-                }
-              ]
-            },
-            "description": "Search messages within a chat, optionally filtered by prompt"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Chat Utilities",
-      "item": [
-        {
-          "name": "Get Chat Statistics",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/chats/{{chatId}}/statistics",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "{{chatId}}", "statistics"]
-            },
-            "description": "Get statistical data for a specific chat"
-          }
-        },
-        {
-          "name": "Export Chat",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/chats/{{chatId}}/export?format=json",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "chats", "{{chatId}}", "export"],
-              "query": [
+                  "value": "20"
+                },
                 {
-                  "key": "format",
-                  "value": "json",
-                  "description": "Export format: json, txt, or csv"
+                  "key": "promptId",
+                  "value": "{{promptId}}"
                 }
               ]
-            },
-            "description": "Export chat conversation in various formats"
-          }
+            }
+          },
+          "response": []
         }
       ]
     },
     {
-      "name": "Image Generation",
+      "name": "🖼️ Image Generation",
       "item": [
         {
           "name": "Generate Image",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('imageId', response.data.image._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}",
-                "description": "Optional - will associate the image with the authenticated user"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"prompt\": \"A beautiful landscape with mountains and a lake at sunset\",\n  \"userId\": \"{{userId}}\",\n  \"width\": 512,\n  \"height\": 512\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "raw": "{\n  \"prompt\": \"A beautiful sunset over mountains with vibrant colors\",\n  \"style\": \"realistic\",\n  \"width\": 1024,\n  \"height\": 1024,\n  \"seed\": 42\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/images/generate",
               "host": ["{{baseUrl}}"],
               "path": ["api", "images", "generate"]
-            },
-            "description": "Generate an image using AI and save it to cloud storage"
-          }
+            }
+          },
+          "response": []
         },
         {
           "name": "Get User Images",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/images/user",
               "host": ["{{baseUrl}}"],
               "path": ["api", "images", "user"]
-            },
-            "description": "Get all generated images for the authenticated user"
-          }
+            }
+          },
+          "response": []
         },
         {
           "name": "Delete Image",
           "request": {
             "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/images/{{imageId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "images", "{{imageId}}"]
-            },
-            "description": "Delete a generated image"
-          }
+            }
+          },
+          "response": []
         }
       ]
-    }
-  ],
-  "event": [
+    },
     {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          "// Auto-set variables from login response",
-          "if (pm.response && pm.response.json()) {",
-          "    const response = pm.response.json();",
-          "    if (response.data && response.data.tokens) {",
-          "        pm.collectionVariables.set('accessToken', response.data.tokens.accessToken);",
-          "    }",
-          "    if (response.data && response.data.user) {",
-          "        pm.collectionVariables.set('userId', response.data.user._id);",
-          "    }",
-          "}"
-        ]
-      }
+      "name": "🤖 AI Integration",
+      "item": [
+        {
+          "name": "Gemini AI Chat (Legacy)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Tell me a short story about a robot\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/gemini",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "gemini"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ChatGPT API (Current)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Explain quantum computing in simple terms\",\n  \"model\": \"gpt-4o-mini\",\n  \"temperature\": 0.7\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chatgpt",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatgpt"]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
