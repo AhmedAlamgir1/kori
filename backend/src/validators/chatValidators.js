@@ -10,6 +10,12 @@ const createChatValidation = [
     .trim()
     .isLength({ min: 1, max: 200 })
     .withMessage("Chat title must be between 1 and 200 characters"),
+
+  body("initialPrompt")
+    .optional()
+    .trim()
+    .isLength({ min: 5, max: 1000 })
+    .withMessage("Initial prompt must be between 5 and 1,000 characters"),
 ];
 
 // Add prompt validation
@@ -42,13 +48,6 @@ const addPromptValidation = [
       "other",
     ])
     .withMessage("Category must be one of the predefined values"),
-
-  body("initialPrompt")
-    .trim()
-    .notEmpty()
-    .withMessage("Initial prompt is required")
-    .isLength({ min: 5, max: 1000 })
-    .withMessage("Initial prompt must be between 5 and 1,000 characters"),
 
   body("profile.name")
     .trim()
@@ -91,6 +90,11 @@ const sendMessageValidation = [
     .withMessage("Message content is required")
     .isLength({ min: 1, max: 10000 })
     .withMessage("Message content must be between 1 and 10,000 characters"),
+
+  body("promptId")
+    .optional()
+    .isMongoId()
+    .withMessage("Prompt ID must be a valid MongoDB ObjectId"),
 ];
 
 // Add message validation (for manual message addition)
@@ -98,6 +102,11 @@ const addMessageValidation = [
   body("role")
     .isIn(MESSAGE_ROLES)
     .withMessage(`Role must be one of: ${MESSAGE_ROLES.join(", ")}`),
+
+  body("promptId")
+    .optional()
+    .isMongoId()
+    .withMessage("Prompt ID must be a valid MongoDB ObjectId"),
 
   body("content")
     .trim()
@@ -135,6 +144,12 @@ const updateChatValidation = [
     .trim()
     .isLength({ min: 1, max: 200 })
     .withMessage("Chat title must be between 1 and 200 characters"),
+
+  body("initialPrompt")
+    .optional()
+    .trim()
+    .isLength({ min: 5, max: 1000 })
+    .withMessage("Initial prompt must be between 5 and 1,000 characters"),
 
   body("status")
     .optional()
@@ -188,6 +203,11 @@ const searchMessagesValidation = [
     .withMessage("Search query is required")
     .isLength({ min: 1, max: 200 })
     .withMessage("Search query must be between 1 and 200 characters"),
+
+  query("promptId")
+    .optional()
+    .isMongoId()
+    .withMessage("Prompt ID must be a valid MongoDB ObjectId"),
 
   query("page")
     .optional()

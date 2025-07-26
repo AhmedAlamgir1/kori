@@ -1,4 +1,5 @@
 const Chat = require("../models/Chat");
+const Message = require("../models/Message");
 const User = require("../models/User");
 const ApiError = require("../utils/ApiError");
 const mongoose = require("mongoose");
@@ -15,7 +16,7 @@ if (config.GEMINI_API_KEY) {
 class ChatService {
   // Create a new chat
   static async createChat(data) {
-    const { userId, title, settings } = data;
+    const { userId, title, settings, initialPrompt } = data;
 
     // Verify user exists
     const user = await User.findById(userId);
@@ -26,6 +27,7 @@ class ChatService {
     const chat = new Chat({
       userId: new mongoose.Types.ObjectId(userId),
       title: title || `Chat ${new Date().toLocaleDateString()}`,
+      initialPrompt,
       settings: {
         maxMessages: settings?.maxMessages || 100,
         autoArchive: settings?.autoArchive || false,
@@ -71,6 +73,93 @@ class ChatService {
     };
   }
 
+  // Get all user chats with complete data including messages
+  static async getAllUserChatsWithData(data) {
+    const { userId, status = "active" } = data;
+
+    const filter = {
+      userId: new mongoose.Types.ObjectId(userId),
+      status,
+    };
+
+    // Get all chats for the user
+    const chats = await Chat.find(filter)
+      .sort({ updatedAt: -1 })
+      .populate("userId", "fullName email");
+
+    // Get all messages for all chats in one query for efficiency
+    const chatIds = chats.map((chat) => chat._id);
+    const allMessages = await Message.find({
+      chatId: { $in: chatIds },
+      deleted: false,
+    }).sort({ chatId: 1, timestamp: 1 });
+
+    // Group messages by chatId for easy lookup
+    const messagesByChat = {};
+    allMessages.forEach((message) => {
+      const chatId = message.chatId.toString();
+      if (!messagesByChat[chatId]) {
+        messagesByChat[chatId] = [];
+      }
+      messagesByChat[chatId].push(message);
+    });
+
+    // Attach messages to each chat and calculate basic statistics
+    const chatsWithData = chats.map((chat) => {
+      const chatObj = chat.toObject();
+      const chatId = chat._id.toString();
+      const messages = messagesByChat[chatId] || [];
+
+      // Add messages to chat
+      chatObj.messages = messages;
+
+      // Calculate basic statistics
+      const totalMessages = messages.length;
+      const userMessages = messages.filter((m) => m.role === "user").length;
+      const assistantMessages = messages.filter(
+        (m) => m.role === "assistant"
+      ).length;
+      const systemMessages = messages.filter((m) => m.role === "system").length;
+
+      const totalTokens = messages.reduce((total, message) => {
+        return total + (message.metadata?.tokenCount || 0);
+      }, 0);
+
+      const lastActivity =
+        messages.length > 0
+          ? new Date(Math.max(...messages.map((m) => new Date(m.timestamp))))
+          : chat.updatedAt;
+
+      chatObj.statistics = {
+        totalMessages,
+        totalTokens,
+        lastActivity,
+        messagesByRole: {
+          user: userMessages,
+          assistant: assistantMessages,
+          system: systemMessages,
+        },
+      };
+
+      return chatObj;
+    });
+
+    return {
+      chats: chatsWithData,
+      summary: {
+        totalChats: chatsWithData.length,
+        totalMessages: chatsWithData.reduce(
+          (sum, chat) => sum + chat.statistics.totalMessages,
+          0
+        ),
+        totalTokens: chatsWithData.reduce(
+          (sum, chat) => sum + chat.statistics.totalTokens,
+          0
+        ),
+      },
+    };
+  }
+
   // Get specific chat by ID
   static async getChatById(data) {
     const { chatId, userId, includeMessages = true } = data;
@@ -99,9 +188,31 @@ class ChatService {
 
   // Send message and get AI response
   static async sendMessage(data) {
-    const { chatId, userId, userMessage } = data;
+    const { chatId, userId, userMessage, promptId = null } = data;
 
     const chat = await this.getChatById({ chatId, userId });
+
+    // If no promptId provided, try to get the first active prompt or create a default one
+    let activePromptId = promptId;
+    if (!activePromptId) {
+      const activePrompts = chat.activePrompts;
+      if (activePrompts.length > 0) {
+        activePromptId = activePrompts[0]._id;
+      } else {
+        // Create a default prompt if none exists
+        const defaultPrompt = chat.addPrompt({
+          background: "General conversation",
+          category: "other",
+          profile: {
+            name: "Assistant",
+            designation: "AI Helper",
+          },
+          isActive: true,
+        });
+        await chat.save();
+        activePromptId = defaultPrompt._id;
+      }
+    }
 
     // Use a default thread ID for main conversation
     const threadId = "main";
@@ -120,21 +231,26 @@ class ChatService {
     }
 
     // Add user message (role is always "user" for sendMessage)
-    const userMsg = chat.addMessage(threadId, "user", messageContent, {
-      timestamp: new Date(),
-    });
-
-    await chat.save();
+    const userMsg = await chat.addMessage(
+      activePromptId,
+      threadId,
+      "user",
+      messageContent,
+      {
+        timestamp: new Date(),
+      }
+    );
 
     return {
       chat,
       userMessage: userMsg,
+      promptId: activePromptId,
     };
   }
 
   // Add message manually (for system messages or imports)
   static async addMessage(data) {
-    const { chatId, userId, role, content, metadata } = data;
+    const { chatId, userId, role, content, metadata, promptId = null } = data;
 
     if (!MESSAGE_ROLES.includes(role)) {
       throw ApiError.badRequest(
@@ -144,15 +260,79 @@ class ChatService {
 
     const chat = await this.getChatById({ chatId, userId });
 
+    // If no promptId provided, try to get the first active prompt
+    let activePromptId = promptId;
+    if (!activePromptId) {
+      const activePrompts = chat.activePrompts;
+      if (activePrompts.length > 0) {
+        activePromptId = activePrompts[0]._id;
+      } else {
+        throw ApiError.badRequest(
+          "No active prompt found. Please provide promptId or create a prompt first."
+        );
+      }
+    }
+
     // Use a default thread ID for main conversation
     const threadId = "main";
 
-    const message = chat.addMessage(threadId, role, content, metadata || {});
-    await chat.save();
+    const message = await chat.addMessage(
+      activePromptId,
+      threadId,
+      role,
+      content,
+      metadata || {}
+    );
 
     return {
       chat,
       message,
+      promptId: activePromptId,
+    };
+  }
+
+  // Get messages for a chat
+  static async getMessages(data) {
+    const { chatId, userId, promptId = null, page = 1, limit = 50 } = data;
+
+    const chat = await this.getChatById({ chatId, userId });
+
+    const options = {
+      includeDeleted: false,
+      limit,
+      page,
+    };
+
+    let messageThreads;
+    if (promptId) {
+      // Get messages for specific prompt
+      messageThreads = await Message.getMessagesByPrompt(
+        chatId,
+        promptId,
+        options
+      );
+    } else {
+      // Get all messages for the chat
+      messageThreads = await Message.getMessagesByChat(chatId, options);
+    }
+
+    // Count total messages
+    const totalQuery = { chatId, deleted: false };
+    if (promptId) {
+      totalQuery.promptId = promptId;
+    }
+    const total = await Message.countDocuments(totalQuery);
+
+    return {
+      messages: messageThreads,
+      total,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page * limit < total,
+        hasPrev: page > 1,
+      },
+      chat,
     };
   }
 
@@ -167,7 +347,13 @@ class ChatService {
     });
 
     // Allowed update fields
-    const allowedUpdates = ["title", "settings", "tags", "status"];
+    const allowedUpdates = [
+      "title",
+      "settings",
+      "tags",
+      "status",
+      "initialPrompt",
+    ];
     const filteredUpdates = {};
 
     for (const key of allowedUpdates) {
@@ -207,22 +393,65 @@ class ChatService {
     return true;
   }
 
+  // Search chats by initial prompt
+  static async searchByInitialPrompt(data) {
+    const { searchText, userId, limit = 10 } = data;
+
+    const chats = await Chat.searchByInitialPrompt(searchText, {
+      userId,
+      limit,
+    });
+
+    return chats;
+  }
+
   // Get chat statistics
   static async getChatStatistics(data) {
     const { chatId, userId } = data;
 
-    const chat = await this.getChatById({ chatId, userId });
+    // Get chat with populated messages for statistics
+    const chat = await this.getChatById({
+      chatId,
+      userId,
+      includeMessages: true,
+    });
+
+    // Also get all messages for this chat from the Message collection
+    const Message = require("../models/Message");
+    const messages = await Message.find({
+      chatId: new mongoose.Types.ObjectId(chatId),
+      deleted: false,
+    }).sort({ timestamp: 1 });
+
+    // Calculate statistics dynamically
+    const totalMessages = messages.length;
+    const userMessages = messages.filter((m) => m.role === "user").length;
+    const assistantMessages = messages.filter(
+      (m) => m.role === "assistant"
+    ).length;
+    const systemMessages = messages.filter((m) => m.role === "system").length;
+
+    // Calculate total tokens (using metadata.tokenCount from messages)
+    const totalTokens = messages.reduce((total, message) => {
+      return total + (message.metadata?.tokenCount || 0);
+    }, 0);
+
+    // Get last activity from the most recent message or chat update
+    const lastActivity =
+      messages.length > 0
+        ? new Date(Math.max(...messages.map((m) => new Date(m.timestamp))))
+        : chat.updatedAt;
 
     const stats = {
-      totalMessages: chat.statistics.totalMessages,
-      totalTokens: chat.statistics.totalTokens,
-      lastActivity: chat.statistics.lastActivity,
+      totalMessages,
+      totalTokens,
+      lastActivity,
       messagesByRole: {
-        user: chat.messages.filter((m) => m.role === "user").length,
-        assistant: chat.messages.filter((m) => m.role === "assistant").length,
-        system: chat.messages.filter((m) => m.role === "system").length,
+        user: userMessages,
+        assistant: assistantMessages,
+        system: systemMessages,
       },
-      averageResponseTime: this.calculateAverageResponseTime(chat.messages),
+      averageResponseTime: this.calculateAverageResponseTime(messages),
       createdAt: chat.createdAt,
       updatedAt: chat.updatedAt,
     };
@@ -232,25 +461,67 @@ class ChatService {
 
   // Search messages in chat
   static async searchMessages(data) {
-    const { chatId, userId, searchQuery, page = 1, limit = 20 } = data;
+    const {
+      chatId,
+      userId,
+      searchQuery,
+      page = 1,
+      limit = 20,
+      promptId = null,
+    } = data;
 
     const chat = await this.getChatById({ chatId, userId });
 
-    // Simple text search (you can enhance this with more sophisticated search)
-    const matchingMessages = chat.messages.filter((message) =>
-      message.content.toLowerCase().includes(searchQuery.toLowerCase())
+    // Search messages using the Message model
+    const searchOptions = {
+      chatId,
+      limit,
+      page,
+    };
+
+    if (promptId) {
+      searchOptions.promptId = promptId;
+    }
+
+    if (userId) {
+      searchOptions.userId = userId;
+    }
+
+    const messageThreads = await Message.searchMessages(
+      searchQuery,
+      searchOptions
     );
 
-    const skip = (page - 1) * limit;
-    const paginatedResults = matchingMessages.slice(skip, skip + limit);
+    // Extract individual messages from threads
+    const allMessages = [];
+    messageThreads.forEach((thread) => {
+      thread.messages.forEach((msg) => {
+        if (msg.content.toLowerCase().includes(searchQuery.toLowerCase())) {
+          allMessages.push({
+            ...msg.toObject(),
+            threadId: thread.threadId,
+            promptId: thread.promptId,
+            chatId: thread.chatId,
+          });
+        }
+      });
+    });
+
+    const total = await Message.countDocuments({
+      chatId,
+      ...(promptId && { promptId }),
+      ...(userId && { userId }),
+      deleted: false,
+      "messages.content": { $regex: searchQuery, $options: "i" },
+    });
 
     return {
-      messages: paginatedResults,
-      total: matchingMessages.length,
+      messages: allMessages,
+      total,
       pagination: {
         currentPage: page,
-        totalPages: Math.ceil(matchingMessages.length / limit),
-        hasNext: skip + limit < matchingMessages.length,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page * limit < total,
         hasPrev: page > 1,
       },
     };

@@ -6,7 +6,7 @@ class ChatController {
   // Create a new chat
   static async createChat(req, res, next) {
     try {
-      const { title, settings } = req.body;
+      const { title, settings, initialPrompt } = req.body;
 
       let chat;
 
@@ -18,6 +18,7 @@ class ChatController {
           userId,
           title,
           settings,
+          initialPrompt,
         });
       }
 
@@ -62,6 +63,56 @@ class ChatController {
     }
   }
 
+  // Get all user's chats with complete data including messages
+  static async getAllUserChatsWithData(req, res, next) {
+    try {
+      // Ensure user is authenticated
+      if (!req.user || !req.user._id) {
+        return next(new ApiError("Authentication is required", 401));
+      }
+
+      const userId = req.user._id;
+      const { status = "active" } = req.query;
+
+      const chatsData = await ChatService.getAllUserChatsWithData({
+        userId,
+        status,
+      });
+
+      const response = ApiResponse.success(
+        "All user chats with data retrieved successfully",
+        chatsData
+      );
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Search chats by initial prompt
+  static async searchByInitialPrompt(req, res, next) {
+    try {
+      const userId = req.user._id;
+      const { q: searchText, limit = 10 } = req.query;
+
+      const chats = await ChatService.searchByInitialPrompt({
+        searchText,
+        userId,
+        limit: parseInt(limit),
+      });
+
+      const response = ApiResponse.success("Chats found", {
+        chats,
+        count: chats.length,
+      });
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Get specific chat by ID
   static async getChatById(req, res, next) {
     try {
@@ -90,7 +141,7 @@ class ChatController {
     try {
       const userId = req.user._id;
       const { chatId } = req.params;
-      const { message } = req.body;
+      const { message, promptId } = req.body;
 
       // Debug logging to help identify the issue
       console.log(
@@ -103,6 +154,7 @@ class ChatController {
         chatId,
         userId,
         userMessage: message,
+        promptId,
       });
 
       const response = ApiResponse.success("Message sent successfully", result);
@@ -118,7 +170,7 @@ class ChatController {
     try {
       const userId = req.user._id;
       const { chatId } = req.params;
-      const { role, content, metadata } = req.body;
+      const { role, content, metadata, promptId } = req.body;
 
       const result = await ChatService.addMessage({
         chatId,
@@ -126,10 +178,63 @@ class ChatController {
         role,
         content,
         metadata,
+        promptId,
       });
 
       const response = ApiResponse.success(
         "Message added successfully",
+        result
+      );
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get messages for a chat
+  static async getMessages(req, res, next) {
+    try {
+      const userId = req.user._id;
+      const { chatId } = req.params;
+      const { promptId, page = 1, limit = 50 } = req.query;
+
+      const result = await ChatService.getMessages({
+        chatId,
+        userId,
+        promptId,
+        page: parseInt(page),
+        limit: parseInt(limit),
+      });
+
+      const response = ApiResponse.success(
+        "Messages retrieved successfully",
+        result
+      );
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get messages for a chat
+  static async getMessages(req, res, next) {
+    try {
+      const userId = req.user._id;
+      const { chatId } = req.params;
+      const { promptId, page = 1, limit = 50 } = req.query;
+
+      const result = await ChatService.getMessages({
+        chatId,
+        userId,
+        promptId,
+        page: parseInt(page),
+        limit: parseInt(limit),
+      });
+
+      const response = ApiResponse.success(
+        "Messages retrieved successfully",
         result
       );
 
@@ -167,17 +272,63 @@ class ChatController {
     try {
       const userId = req.user._id;
       const { chatId } = req.params;
-      const { permanent = false } = req.query;
 
       await ChatService.deleteChat({
         chatId,
         userId,
-        permanent: permanent === "true",
+      });
+
+      const response = ApiResponse.success("Chat deleted successfully");
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Update initial prompt for a chat
+  static async updateInitialPrompt(req, res, next) {
+    try {
+      const userId = req.user._id;
+      const { chatId } = req.params;
+      const { initialPrompt } = req.body;
+
+      const chat = await ChatService.updateChat({
+        chatId,
+        userId,
+        updates: { initialPrompt },
       });
 
       const response = ApiResponse.success(
-        permanent ? "Chat deleted permanently" : "Chat archived successfully",
-        null
+        "Initial prompt updated successfully",
+        {
+          chat,
+        }
+      );
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Remove initial prompt from a chat
+  static async removeInitialPrompt(req, res, next) {
+    try {
+      const userId = req.user._id;
+      const { chatId } = req.params;
+
+      const chat = await ChatService.updateChat({
+        chatId,
+        userId,
+        updates: { initialPrompt: null },
+      });
+
+      const response = ApiResponse.success(
+        "Initial prompt removed successfully",
+        {
+          chat,
+        }
       );
 
       res.status(response.statusCode).json(response);
@@ -189,6 +340,11 @@ class ChatController {
   // Get chat statistics
   static async getChatStatistics(req, res, next) {
     try {
+      // Ensure user is authenticated
+      if (!req.user || !req.user._id) {
+        return next(new ApiError("Authentication is required", 401));
+      }
+
       const userId = req.user._id;
       const { chatId } = req.params;
 
@@ -213,7 +369,7 @@ class ChatController {
     try {
       const userId = req.user._id;
       const { chatId } = req.params;
-      const { query, page = 1, limit = 20 } = req.query;
+      const { query, page = 1, limit = 20, promptId } = req.query;
 
       const results = await ChatService.searchMessages({
         chatId,
@@ -221,6 +377,7 @@ class ChatController {
         searchQuery: query,
         page: parseInt(page),
         limit: parseInt(limit),
+        promptId,
       });
 
       const response = ApiResponse.success(
@@ -237,6 +394,11 @@ class ChatController {
   // Export chat conversation
   static async exportChat(req, res, next) {
     try {
+      // Ensure user is authenticated
+      if (!req.user || !req.user._id) {
+        return next(new ApiError("Authentication is required", 401));
+      }
+
       const userId = req.user._id;
       const { chatId } = req.params;
       const { format = "json" } = req.query; // json, txt, csv
@@ -311,12 +473,6 @@ class ChatController {
     try {
       const { chatId } = req.params;
 
-      // Ensure either userId or sessionId is provided
-      if (!req.user) {
-        const response = ApiResponse.success("Prompt added successfully", 201);
-
-        res.status(response.statusCode).json(response);
-      }
       const promptData = { ...req.body, userId: req.userId };
       const userId = req.user ? req.user._id : null;
       if (!userId) {

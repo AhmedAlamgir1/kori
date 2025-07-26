@@ -1,75 +1,6 @@
 const mongoose = require("mongoose");
 const { MESSAGE_ROLES } = require("../constants/messageRoles");
 
-// Individual message schema for to/from messages within a conversation thread
-const individualMessageSchema = new mongoose.Schema(
-  {
-    role: {
-      type: String,
-      required: [true, "Message role is required"],
-      enum: {
-        values: MESSAGE_ROLES,
-        message: `Role must be one of: ${MESSAGE_ROLES.join(", ")}`,
-      },
-    },
-    content: {
-      type: String,
-      required: [false, "Message content is required"],
-      trim: true,
-      maxlength: [10000, "Message content cannot exceed 10,000 characters"],
-    },
-    timestamp: {
-      type: Date,
-      default: Date.now,
-    },
-    metadata: {
-      // For storing additional info like token count, processing time, etc.
-      tokenCount: {
-        type: Number,
-        min: [0, "Token count cannot be negative"],
-      },
-      processingTime: {
-        type: Number, // in milliseconds
-        min: [0, "Processing time cannot be negative"],
-      },
-      model: {
-        type: String,
-        trim: true,
-      },
-    },
-  },
-  {
-    _id: true,
-  }
-);
-
-// Message thread schema that contains multiple to/from messages
-const messageSchema = new mongoose.Schema(
-  {
-    id: {
-      type: String,
-      required: [true, "Message thread ID is required"],
-      trim: true,
-    },
-    messages: [individualMessageSchema], // Array of to/from messages
-    deleted: {
-      type: Boolean,
-      default: false,
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-    updatedAt: {
-      type: Date,
-      default: Date.now,
-    },
-  },
-  {
-    _id: true,
-  }
-);
-
 // Prompt schema for AI character-based conversations
 const promptSchema = new mongoose.Schema(
   {
@@ -115,12 +46,6 @@ const promptSchema = new mongoose.Schema(
         ],
         message: "Category must be one of the predefined values",
       },
-    },
-    initialPrompt: {
-      type: String,
-      required: false, // Made optional
-      trim: true,
-      maxlength: [1000, "Initial prompt cannot exceed 1,000 characters"],
     },
     profile: {
       name: {
@@ -178,8 +103,13 @@ const chatSchema = new mongoose.Schema(
         return `Chat ${new Date().toLocaleDateString()}`;
       },
     },
-    messages: [messageSchema],
     prompts: [promptSchema], // Array of AI character prompts
+    initialPrompt: {
+      type: String,
+      required: false, // Made optional
+      trim: true,
+      maxlength: [1000, "Initial prompt cannot exceed 1,000 characters"],
+    },
     status: {
       type: String,
       enum: {
@@ -199,11 +129,9 @@ const chatSchema = new mongoose.Schema(
 // Indexes for better query performance
 chatSchema.index({ userId: 1, createdAt: -1 });
 chatSchema.index({ userId: 1, status: 1 });
+chatSchema.index({ initialPrompt: "text" }); // Text index for searching initial prompts
 chatSchema.index({ "prompts.category": 1 });
 chatSchema.index({ "prompts.userId": 1 });
-chatSchema.index({ "messages.id": 1 });
-chatSchema.index({ "messages.deleted": 1 });
-chatSchema.index({ "messages.updatedAt": -1 });
 
 // // Virtual for message count
 // chatSchema.virtual("messageCount").get(function () {
@@ -226,114 +154,116 @@ chatSchema.virtual("activePrompts").get(function () {
   return this.prompts.filter((prompt) => prompt.isActive);
 });
 
-// Virtual for active message threads count
-chatSchema.virtual("activeThreadsCount").get(function () {
-  return this.messages.filter((thread) => !thread.deleted).length;
+// Virtual for active message threads count (requires async population)
+chatSchema.virtual("activeThreadsCount", {
+  ref: "Message",
+  localField: "_id",
+  foreignField: "chatId",
+  count: true,
+  match: { deleted: false },
 });
 
-// Virtual for total messages count across all active threads
-chatSchema.virtual("totalMessagesCount").get(function () {
-  return this.messages
-    .filter((thread) => !thread.deleted)
-    .reduce((total, thread) => total + thread.messages.length, 0);
-});
-
-// Virtual for latest message across all threads
-chatSchema.virtual("latestMessage").get(function () {
-  const activeThreads = this.messages.filter((thread) => !thread.deleted);
-  if (activeThreads.length === 0) return null;
-
-  let latestMessage = null;
-  let latestTimestamp = null;
-
-  activeThreads.forEach((thread) => {
-    thread.messages.forEach((message) => {
-      if (!latestTimestamp || message.timestamp > latestTimestamp) {
-        latestMessage = message;
-        latestTimestamp = message.timestamp;
-      }
-    });
-  });
-
-  return latestMessage;
+// Virtual for total messages count across all active threads (requires async population)
+chatSchema.virtual("totalMessagesCount", {
+  ref: "Message",
+  localField: "_id",
+  foreignField: "chatId",
+  match: { deleted: false },
 });
 
 // Pre-save middleware to auto-generate title from first user message
-chatSchema.pre("save", function (next) {
-  if (this.isModified("messages")) {
-    // Update updatedAt for modified message threads
-    this.messages.forEach((thread) => {
-      if (thread.isModified && !thread.deleted) {
-        thread.updatedAt = new Date();
-      }
-    });
+chatSchema.pre("save", async function (next) {
+  // Auto-generate title from first user message if not set
+  if (!this.title || this.title.includes("Chat ")) {
+    try {
+      // Import Message model here to avoid circular dependency
+      const Message = require("./Message");
 
-    // Auto-generate title from first user message if not set
-    if (!this.title || this.title.includes("Chat ")) {
-      // Find first user message across all active threads
-      let firstUserMessage = null;
+      // Find first user message across all active threads for this chat
+      const messageThread = await Message.findOne({
+        chatId: this._id,
+        deleted: false,
+        "messages.role": "user",
+      }).sort({ createdAt: 1 });
 
-      for (const thread of this.messages) {
-        if (!thread.deleted) {
-          firstUserMessage = thread.messages.find((msg) => msg.role === "user");
-          if (firstUserMessage) break;
+      if (messageThread) {
+        const firstUserMessage = messageThread.messages.find(
+          (msg) => msg.role === "user"
+        );
+
+        if (firstUserMessage) {
+          // Take first 50 characters of the first user message as title
+          this.title =
+            firstUserMessage.content.substring(0, 50) +
+            (firstUserMessage.content.length > 50 ? "..." : "");
         }
       }
-
-      if (firstUserMessage) {
-        // Take first 50 characters of the first user message as title
-        this.title =
-          firstUserMessage.content.substring(0, 50) +
-          (firstUserMessage.content.length > 50 ? "..." : "");
-      }
+    } catch (error) {
+      console.error("Error auto-generating chat title:", error);
     }
   }
   next();
 });
 
-// Instance method to add a message to a specific thread or create a new thread
-chatSchema.methods.addMessage = function (
+// Instance method to add a message to a specific prompt/thread
+chatSchema.methods.addMessage = async function (
+  promptId,
   threadId,
   role,
   content,
   metadata = {}
 ) {
-  // Find existing thread
-  let messageThread = this.messages.find(
-    (thread) => thread.id === threadId && !thread.deleted
-  );
+  const Message = require("./Message");
 
-  const newMessage = {
-    role,
-    content,
-    metadata,
-    timestamp: new Date(),
-  };
+  // Find existing message thread
+  let messageThread = await Message.findOne({
+    chatId: this._id,
+    promptId,
+    threadId,
+    deleted: false,
+  });
 
   if (messageThread) {
     // Add to existing thread
-    messageThread.messages.push(newMessage);
-    messageThread.updatedAt = new Date();
+    messageThread.addMessage(role, content, metadata);
+    await messageThread.save();
     return messageThread.messages[messageThread.messages.length - 1];
   } else {
-    // Create new thread
-    const newThread = {
-      id: threadId,
-      messages: [newMessage],
-      deleted: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.messages.push(newThread);
-    return this.messages[this.messages.length - 1].messages[0];
+    // Create new message thread
+    const newMessageThread = new Message({
+      chatId: this._id,
+      promptId,
+      threadId,
+      userId: this.userId,
+      messages: [
+        {
+          role,
+          content,
+          metadata,
+          timestamp: new Date(),
+        },
+      ],
+    });
+
+    await newMessageThread.save();
+    return newMessageThread.messages[0];
   }
 };
 
 // Instance method to add multiple messages to a thread
-chatSchema.methods.addMessagesToThread = function (threadId, messages) {
-  let messageThread = this.messages.find(
-    (thread) => thread.id === threadId && !thread.deleted
-  );
+chatSchema.methods.addMessagesToThread = async function (
+  promptId,
+  threadId,
+  messages
+) {
+  const Message = require("./Message");
+
+  let messageThread = await Message.findOne({
+    chatId: this._id,
+    promptId,
+    threadId,
+    deleted: false,
+  });
 
   const formattedMessages = messages.map((msg) => ({
     role: msg.role,
@@ -343,28 +273,35 @@ chatSchema.methods.addMessagesToThread = function (threadId, messages) {
   }));
 
   if (messageThread) {
-    messageThread.messages.push(...formattedMessages);
-    messageThread.updatedAt = new Date();
+    messageThread.addMessages(messages);
+    await messageThread.save();
     return messageThread.messages.slice(-formattedMessages.length);
   } else {
-    const newThread = {
-      id: threadId,
+    const newMessageThread = new Message({
+      chatId: this._id,
+      promptId,
+      threadId,
+      userId: this.userId,
       messages: formattedMessages,
-      deleted: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.messages.push(newThread);
-    return this.messages[this.messages.length - 1].messages;
+    });
+
+    await newMessageThread.save();
+    return newMessageThread.messages;
   }
 };
 
 // Instance method to soft delete a message thread
-chatSchema.methods.deleteMessageThread = function (threadId) {
-  const messageThread = this.messages.find((thread) => thread.id === threadId);
+chatSchema.methods.deleteMessageThread = async function (promptId, threadId) {
+  const Message = require("./Message");
+
+  const messageThread = await Message.findOne({
+    chatId: this._id,
+    promptId,
+    threadId,
+  });
+
   if (messageThread) {
-    messageThread.deleted = true;
-    messageThread.updatedAt = new Date();
+    await messageThread.softDelete();
     return messageThread;
   }
   return null;
@@ -394,68 +331,54 @@ chatSchema.methods.deactivatePrompt = function (promptId) {
   return null;
 };
 
-// Instance method to get conversation history in ChatGPT format (only latest/active threads)
-chatSchema.methods.getConversationHistory = function (
+// Instance method to get conversation history for a specific prompt
+chatSchema.methods.getConversationHistory = async function (
+  promptId,
   includeSystem = true,
   latestOnly = true
 ) {
-  const activeThreads = this.messages.filter((thread) => !thread.deleted);
+  const Message = require("./Message");
 
-  if (latestOnly && activeThreads.length > 0) {
-    // Get the most recently updated thread
-    const latestThread = activeThreads.reduce((latest, current) =>
-      current.updatedAt > latest.updatedAt ? current : latest
-    );
-
-    return latestThread.messages
-      .filter((msg) => includeSystem || msg.role !== "system")
-      .map((msg) => ({
-        role: msg.role,
-        timestamp: msg.timestamp,
-      }));
-  } else {
-    // Return all messages from all active threads
-    const allMessages = [];
-    activeThreads.forEach((thread) => {
-      thread.messages
-        .filter((msg) => includeSystem || msg.role !== "system")
-        .forEach((msg) => {
-          allMessages.push({
-            threadId: thread.id,
-            role: msg.role,
-            timestamp: msg.timestamp,
-          });
-        });
-    });
-
-    // Sort by timestamp
-    return allMessages.sort(
-      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-    );
-  }
+  return await Message.getConversationHistory(this._id, promptId, {
+    includeSystem,
+    latestOnly,
+  });
 };
 
-// Instance method to get latest message thread
-chatSchema.methods.getLatestMessageThread = function () {
-  const activeThreads = this.messages.filter((thread) => !thread.deleted);
+// Instance method to get latest message thread for a prompt
+chatSchema.methods.getLatestMessageThread = async function (promptId) {
+  const Message = require("./Message");
 
-  if (activeThreads.length === 0) return null;
+  const messageThread = await Message.findOne({
+    chatId: this._id,
+    promptId,
+    deleted: false,
+  }).sort({ updatedAt: -1 });
 
-  return activeThreads.reduce((latest, current) =>
-    current.updatedAt > latest.updatedAt ? current : latest
-  );
+  return messageThread;
 };
 
-// Instance method to get all active message threads
-chatSchema.methods.getActiveMessageThreads = function () {
-  return this.messages.filter((thread) => !thread.deleted);
+// Instance method to get all active message threads for a prompt
+chatSchema.methods.getActiveMessageThreads = async function (promptId) {
+  const Message = require("./Message");
+
+  return await Message.find({
+    chatId: this._id,
+    promptId,
+    deleted: false,
+  }).sort({ updatedAt: -1 });
 };
 
 // Instance method to get specific message thread by ID
-chatSchema.methods.getMessageThread = function (threadId) {
-  return this.messages.find(
-    (thread) => thread.id === threadId && !thread.deleted
-  );
+chatSchema.methods.getMessageThread = async function (promptId, threadId) {
+  const Message = require("./Message");
+
+  return await Message.findOne({
+    chatId: this._id,
+    promptId,
+    threadId,
+    deleted: false,
+  });
 };
 
 // Static method to get user's active chats (authenticated users) - returns latest messages only
@@ -468,7 +391,7 @@ chatSchema.statics.getUserActiveChats = function (userId, limit = 10) {
 };
 
 // Static method to get chats by user with latest message threads only
-chatSchema.statics.getChatsWithLatestMessages = function ({
+chatSchema.statics.getChatsWithLatestMessages = async function ({
   userId,
   limit = 10,
   status = "active",
@@ -481,74 +404,33 @@ chatSchema.statics.getChatsWithLatestMessages = function ({
     throw new Error("userId must be provided");
   }
 
-  return this.aggregate([
-    { $match: query },
-    {
-      $addFields: {
-        // Filter out deleted message threads
-        activeMessages: {
-          $filter: {
-            input: "$messages",
-            as: "thread",
-            cond: { $eq: ["$$thread.deleted", false] },
-          },
-        },
-      },
-    },
-    {
-      $addFields: {
-        // Get the latest message thread
-        latestMessageThread: {
-          $reduce: {
-            input: "$activeMessages",
-            initialValue: null,
-            in: {
-              $cond: {
-                if: {
-                  $or: [
-                    { $eq: ["$$value", null] },
-                    { $gt: ["$$this.updatedAt", "$$value.updatedAt"] },
-                  ],
-                },
-                then: "$$this",
-                else: "$$value",
-              },
-            },
-          },
-        },
-      },
-    },
-    {
-      $project: {
-        title: 1,
-        userId: 1,
-        status: 1,
-        prompts: 1,
-        createdAt: 1,
-        updatedAt: 1,
-        messages: "$latestMessageThread.messages",
-        latestThreadId: "$latestMessageThread.id",
-        latestThreadUpdatedAt: "$latestMessageThread.updatedAt",
-      },
-    },
-    { $sort: { createdAt: -1 } },
-    { $limit: limit },
-    {
-      $lookup: {
-        from: "users",
-        localField: "userId",
-        foreignField: "_id",
-        as: "userInfo",
-        pipeline: [{ $project: { fullName: 1, email: 1 } }],
-      },
-    },
-    {
-      $addFields: {
-        userId: { $arrayElemAt: ["$userInfo", 0] },
-      },
-    },
-    { $unset: "userInfo" },
-  ]);
+  // Get chats first
+  const chats = await this.find(query)
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .populate("userId", "fullName email")
+    .lean();
+
+  // Get latest messages for each chat
+  const Message = require("./Message");
+
+  for (const chat of chats) {
+    const latestMessageThread = await Message.findOne({
+      chatId: chat._id,
+      deleted: false,
+    })
+      .sort({ updatedAt: -1 })
+      .lean();
+
+    if (latestMessageThread) {
+      chat.latestMessages = latestMessageThread.messages;
+      chat.latestThreadId = latestMessageThread.threadId;
+      chat.latestThreadUpdatedAt = latestMessageThread.updatedAt;
+      chat.promptId = latestMessageThread.promptId;
+    }
+  }
+
+  return chats;
 };
 
 // Static method to get chats by user (returns all data)
@@ -580,6 +462,23 @@ chatSchema.statics.getChatsByPromptCategory = function (
     status: "active",
     "prompts.category": category,
     "prompts.isActive": true,
+  };
+
+  if (userId) {
+    query.userId = new mongoose.Types.ObjectId(userId);
+  }
+
+  return this.find(query).sort({ createdAt: -1 }).limit(limit);
+};
+
+// Static method to search chats by initial prompt
+chatSchema.statics.searchByInitialPrompt = function (
+  searchText,
+  { userId, limit = 10 }
+) {
+  const query = {
+    status: "active",
+    initialPrompt: { $regex: searchText, $options: "i" },
   };
 
   if (userId) {
