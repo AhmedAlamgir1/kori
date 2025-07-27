@@ -131,10 +131,10 @@ app.use(requestLogger); // Request logging
 // CORS configuration to allow all origins
 app.use(
   cors({
-    origin: "*", // Allow all origins
+    origin: ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"], // Allow specific origins
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-    credentials: false, // Set to false when origin is '*'
+    credentials: true, // Set to true when using credentials: 'include'
   })
 ); // Enables Cross-Origin Resource Sharing (for frontend to talk to backend)
 

@@ -16,12 +16,6 @@ interface ImageGenerationResponse {
   };
   message?: string;
 }
-
-/**
- * Generate an image using the backend Replicate API
- * @param options - Image generation options
- * @returns Promise with the generated image URL
- */
 export async function generateImage(options: ImageGenerationOptions): Promise<string | null> {
   try {
     const response = await fetch('/api/images/generate', {
@@ -55,15 +49,8 @@ export async function generateImage(options: ImageGenerationOptions): Promise<st
     return null;
   }
 }
-
-/**
- * Generate a profile image based on background description and name
- * @param background - Profile background description
- * @param name - Profile name
- * @returns Promise with the generated image URL
- */
 export async function generateProfileImage(background: string, name: string): Promise<string | null> {
-  const imagePrompt = `Professional headshot portrait of ${name}, ${background}. Clean, modern, professional photography style, high quality, detailed face, business casual attire, neutral background.`;
+  const imagePrompt = `Professional headshot portrait of ${name}, ${background}. Clean, modern, professional photography style, high quality,strictly show detailed face only and not body, neutral background.`;
   
   return generateImage({
     prompt: imagePrompt,

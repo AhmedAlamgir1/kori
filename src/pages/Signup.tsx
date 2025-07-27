@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { register, RegisterRequest } from "@/utils/api/authApi";
 
 interface SignupFormState {
   name: string;
@@ -9,6 +10,7 @@ interface SignupFormState {
 }
 
 const Signup: React.FC = () => {
+  const navigate = useNavigate();
   const [form, setForm] = useState<SignupFormState>({
     name: "",
     email: "",
@@ -17,26 +19,65 @@ const Signup: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    if (error) setError(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Client-side validation
     if (!form.name || !form.email || !form.password || !form.confirmPassword) {
       setError("Please fill in all fields.");
       return;
     }
+    
     if (form.password !== form.confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
 
+    // Password strength validation
+    if (form.password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
+
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(form.password)) {
+      setError("Password must contain at least one lowercase letter, one uppercase letter, and one number.");
+      return;
+    }
+
+    setIsLoading(true);
     setError(null);
-    console.log("Signup Submitted:", form);
-    // You can add API call logic here
+
+    try {
+      const userData: RegisterRequest = {
+        fullName: form.name,
+        email: form.email,
+        password: form.password,
+        confirmPassword: form.confirmPassword,
+      };
+
+      const result = await register(userData);
+      
+      // Registration successful - user is automatically logged in
+      console.log("Registration successful:", result);
+      
+      // Redirect to dashboard or home page
+      navigate('/dashboard');
+    } catch (error) {
+      console.error("Registration failed:", error);
+      // Error message is already handled by the authApi with toast notifications
+      setError(error instanceof Error ? error.message : "Registration failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -113,9 +154,17 @@ const Signup: React.FC = () => {
 
           <button
             type="submit"
-            className="w-full py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none"
+            disabled={isLoading}
+            className="w-full py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center justify-center"
           >
-            Sign Up
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Creating Account...
+              </>
+            ) : (
+              "Sign Up"
+            )}
           </button>
         </form>
 

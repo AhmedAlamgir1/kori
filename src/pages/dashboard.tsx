@@ -7,6 +7,12 @@ const Dashboard: React.FC = () => {
 
   const navigate = useNavigate();
 
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
   const optionCards = [
     {
       id: 2,
@@ -80,9 +86,15 @@ const Dashboard: React.FC = () => {
           <a href="#" className="flex items-center gap-3 text-white hover:text-indigo-400 transition">
             <Settings /> Settings
           </a>
-          <a href="#" className="flex items-center gap-3 text-white hover:text-red-400 transition">
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-3 text-white hover:text-red-400 transition w-full text-left"
+          >
             <LogOut /> Logout
-          </a>
+          </button>
+          <h1 className="text-white text-xl">
+            Chats
+          </h1>
         </nav>
       </aside>
 
