@@ -47,12 +47,12 @@ const promptSchema = new mongoose.Schema(
         min: [18, "Age must be at least 18"],
         max: [100, "Age cannot exceed 100"],
       },
-      uniquePerspective: {
-        type: String,
-        required: false, // Made optional
-        trim: true,
-        maxlength: [500, "Unique perspective cannot exceed 500 characters"],
-      },
+    },
+    uniquePerspective: {
+      type: String,
+      required: false, // Made optional
+      trim: true,
+      maxlength: [500, "Unique perspective cannot exceed 500 characters"],
     },
     isActive: {
       type: Boolean,
