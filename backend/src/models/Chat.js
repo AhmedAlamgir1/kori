@@ -110,7 +110,7 @@ const chatSchema = new mongoose.Schema(
       required: false, // Made optional
       trim: true,
       enum: {
-        values: ["I-want-to-explore", "I-want-to-test-validate"],
+        values: ["evaluative", "explorative"],
         message: "Category must be one of the predefined values",
       },
     },
@@ -171,11 +171,7 @@ chatSchema.virtual("totalMessagesCount", {
 });
 
 // Instance method to add a message to a specific prompt
-chatSchema.methods.addMessage = async function (
-  promptId,
-  role,
-  content
-) {
+chatSchema.methods.addMessage = async function (promptId, role, content) {
   const Message = require("./Message");
 
   // Find existing message thread
@@ -211,10 +207,7 @@ chatSchema.methods.addMessage = async function (
 };
 
 // Instance method to add multiple messages to a thread
-chatSchema.methods.addMessagesToThread = async function (
-  promptId,
-  messages
-) {
+chatSchema.methods.addMessagesToThread = async function (promptId, messages) {
   const Message = require("./Message");
 
   let messageThread = await Message.findOne({
