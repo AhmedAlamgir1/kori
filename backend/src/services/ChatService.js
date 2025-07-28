@@ -16,7 +16,7 @@ if (config.GEMINI_API_KEY) {
 class ChatService {
   // Create a new chat
   static async createChat(data) {
-    const { userId, title, settings, initialPrompt, category } = data;
+    const { userId, settings, initialPrompt, category } = data;
 
     // Verify user exists
     const user = await User.findById(userId);
@@ -26,7 +26,6 @@ class ChatService {
 
     const chat = new Chat({
       userId: new mongoose.Types.ObjectId(userId),
-      title: title || `Chat ${new Date().toLocaleDateString()}`,
       initialPrompt,
       category,
       settings: {
@@ -333,7 +332,6 @@ class ChatService {
         hasPrev: page > 1,
       },
       chatId: chat._id,
-      chatTitle: chat.title,
     };
   }
 
@@ -349,7 +347,6 @@ class ChatService {
 
     // Allowed update fields
     const allowedUpdates = [
-      "title",
       "settings",
       "tags",
       "status",
@@ -538,7 +535,6 @@ class ChatService {
 
     const exportData = {
       chatId: chat._id,
-      title: chat.title,
       createdAt: chat.createdAt,
       messages: chat.messages.map((msg) => ({
         role: msg.role,
@@ -621,7 +617,7 @@ class ChatService {
     const recentChats = await Chat.find(recentChatsFilter)
       .sort({ "statistics.lastActivity": -1 })
       .limit(5)
-      .select("title statistics.lastActivity statistics.totalMessages");
+      .select("statistics.lastActivity statistics.totalMessages");
 
     return {
       ...dashboardStats,
@@ -736,7 +732,7 @@ class ChatService {
 
   // Helper method to format chat as text
   static formatChatAsText(chatData) {
-    let text = `Chat: ${chatData.title}\n`;
+    let text = `Chat Export\n`;
     text += `Created: ${chatData.createdAt}\n\n`;
 
     chatData.messages.forEach((msg, index) => {

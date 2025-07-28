@@ -97,14 +97,6 @@ const chatSchema = new mongoose.Schema(
       required: false, // Made optional for soft auth
       index: true,
     },
-    title: {
-      type: String,
-      trim: true,
-      maxlength: [200, "Chat title cannot exceed 200 characters"],
-      default: function () {
-        return `Chat ${new Date().toLocaleDateString()}`;
-      },
-    },
     prompts: [promptSchema], // Array of AI character prompts
     questions: [questionSchema], // Array of predefined questions
     initialPrompt: {
@@ -178,47 +170,11 @@ chatSchema.virtual("totalMessagesCount", {
   match: { deleted: false },
 });
 
-// Pre-save middleware to auto-generate title from first user message
-chatSchema.pre("save", async function (next) {
-  // Auto-generate title from first user message if not set
-  if (!this.title || this.title.includes("Chat ")) {
-    try {
-      // Import Message model here to avoid circular dependency
-      const Message = require("./Message");
-
-      // Find first user message across all active threads for this chat
-      const messageThread = await Message.findOne({
-        chatId: this._id,
-        deleted: false,
-        "messages.role": "user",
-      }).sort({ createdAt: 1 });
-
-      if (messageThread) {
-        const firstUserMessage = messageThread.messages.find(
-          (msg) => msg.role === "user"
-        );
-
-        if (firstUserMessage) {
-          // Take first 50 characters of the first user message as title
-          this.title =
-            firstUserMessage.content.substring(0, 50) +
-            (firstUserMessage.content.length > 50 ? "..." : "");
-        }
-      }
-    } catch (error) {
-      console.error("Error auto-generating chat title:", error);
-    }
-  }
-  next();
-});
-
-// Instance method to add a message to a specific prompt/thread
+// Instance method to add a message to a specific prompt
 chatSchema.methods.addMessage = async function (
   promptId,
-  threadId,
   role,
-  content,
-  metadata = {}
+  content
 ) {
   const Message = require("./Message");
 
@@ -226,13 +182,12 @@ chatSchema.methods.addMessage = async function (
   let messageThread = await Message.findOne({
     chatId: this._id,
     promptId,
-    threadId,
     deleted: false,
   });
 
   if (messageThread) {
     // Add to existing thread
-    messageThread.addMessage(role, content, metadata);
+    messageThread.addMessage(role, content);
     await messageThread.save();
     return messageThread.messages[messageThread.messages.length - 1];
   } else {
@@ -240,13 +195,11 @@ chatSchema.methods.addMessage = async function (
     const newMessageThread = new Message({
       chatId: this._id,
       promptId,
-      threadId,
       userId: this.userId,
       messages: [
         {
           role,
           content,
-          metadata,
           timestamp: new Date(),
         },
       ],
@@ -260,7 +213,6 @@ chatSchema.methods.addMessage = async function (
 // Instance method to add multiple messages to a thread
 chatSchema.methods.addMessagesToThread = async function (
   promptId,
-  threadId,
   messages
 ) {
   const Message = require("./Message");
@@ -268,14 +220,12 @@ chatSchema.methods.addMessagesToThread = async function (
   let messageThread = await Message.findOne({
     chatId: this._id,
     promptId,
-    threadId,
     deleted: false,
   });
 
   const formattedMessages = messages.map((msg) => ({
     role: msg.role,
     content: msg.content,
-    metadata: msg.metadata || {},
     timestamp: new Date(),
   }));
 

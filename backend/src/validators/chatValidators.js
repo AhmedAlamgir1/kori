@@ -5,12 +5,6 @@ const { MESSAGE_ROLES } = require("../constants/messageRoles");
 
 // Create chat validation
 const createChatValidation = [
-  body("title")
-    .optional()
-    .trim()
-    .isLength({ min: 1, max: 200 })
-    .withMessage("Chat title must be between 1 and 200 characters"),
-
   body("initialPrompt")
     .optional()
     .trim()
@@ -19,7 +13,7 @@ const createChatValidation = [
 
   body("category")
     .optional()
-    .isIn(["I-want-to-explore", "I-want-to-test-validate"])
+    .isIn(["evaluative", "explorative"])
     .withMessage("Category must be one of the predefined values"),
 ];
 
@@ -130,12 +124,6 @@ const addMessageValidation = [
 
 // Update chat validation
 const updateChatValidation = [
-  body("title")
-    .optional()
-    .trim()
-    .isLength({ min: 1, max: 200 })
-    .withMessage("Chat title must be between 1 and 200 characters"),
-
   body("initialPrompt")
     .optional()
     .trim()
@@ -149,7 +137,8 @@ const updateChatValidation = [
 
   body("category")
     .optional()
-    .isIn(["I-want-to-explore", "I-want-to-test-validate"])
+    .isIn(["evaluative", "explorative"])
+
     .withMessage("Category must be one of the predefined values"),
 
   body("settings")
@@ -254,7 +243,8 @@ const getDashboardValidation = [
 const getPromptsValidation = [
   query("category")
     .optional()
-    .isIn(["I-want-to-explore", "I-want-to-test-validate"])
+    .isIn(["evaluative", "explorative"])
+
     .withMessage("Category must be one of the predefined values"),
 
   query("page")

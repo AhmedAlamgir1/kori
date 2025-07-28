@@ -6,7 +6,7 @@ class ChatController {
   // Create a new chat
   static async createChat(req, res, next) {
     try {
-      const { title, settings, initialPrompt, category } = req.body;
+      const { settings, initialPrompt, category } = req.body;
 
       let chat;
 
@@ -16,7 +16,6 @@ class ChatController {
 
         chat = await ChatService.createChat({
           userId,
-          title,
           settings,
           initialPrompt,
           category,

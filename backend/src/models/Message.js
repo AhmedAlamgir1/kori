@@ -22,21 +22,6 @@ const individualMessageSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-    metadata: {
-      // For storing additional info like token count, processing time, etc.
-      tokenCount: {
-        type: Number,
-        min: [0, "Token count cannot be negative"],
-      },
-      processingTime: {
-        type: Number, // in milliseconds
-        min: [0, "Processing time cannot be negative"],
-      },
-      model: {
-        type: String,
-        trim: true,
-      },
-    },
   },
   {
     _id: true,
@@ -55,12 +40,6 @@ const messageSchema = new mongoose.Schema(
     promptId: {
       type: mongoose.Schema.Types.ObjectId,
       required: [true, "Prompt ID is required"],
-      index: true,
-    },
-    threadId: {
-      type: String,
-      required: [true, "Thread ID is required"],
-      trim: true,
       index: true,
     },
     userId: {
@@ -87,7 +66,6 @@ const messageSchema = new mongoose.Schema(
 messageSchema.index({ chatId: 1, promptId: 1 });
 messageSchema.index({ chatId: 1, deleted: 1, updatedAt: -1 });
 messageSchema.index({ promptId: 1, deleted: 1, updatedAt: -1 });
-messageSchema.index({ threadId: 1, deleted: 1 });
 messageSchema.index({ userId: 1, createdAt: -1 });
 
 // Virtual for message count in this thread
@@ -108,11 +86,10 @@ messageSchema.virtual("latestMessageTimestamp").get(function () {
 });
 
 // Instance method to add a message to this thread
-messageSchema.methods.addMessage = function (role, content, metadata = {}) {
+messageSchema.methods.addMessage = function (role, content) {
   const newMessage = {
     role,
     content,
-    metadata,
     timestamp: new Date(),
   };
 
@@ -125,7 +102,6 @@ messageSchema.methods.addMessages = function (messages) {
   const formattedMessages = messages.map((msg) => ({
     role: msg.role,
     content: msg.content,
-    metadata: msg.metadata || {},
     timestamp: new Date(),
   }));
 
@@ -179,18 +155,6 @@ messageSchema.statics.getMessagesByChat = function (chatId, options = {}) {
     .populate("userId", "fullName email");
 };
 
-// Static method to get messages by thread ID
-messageSchema.statics.getMessagesByThread = function (threadId, options = {}) {
-  const { includeDeleted = false } = options;
-
-  const query = { threadId };
-  if (!includeDeleted) {
-    query.deleted = false;
-  }
-
-  return this.findOne(query).populate("userId", "fullName email");
-};
-
 // Static method to search messages
 messageSchema.statics.searchMessages = function (searchQuery, options = {}) {
   const { chatId, promptId, userId, limit = 20, page = 1 } = options;
@@ -236,7 +200,6 @@ messageSchema.statics.getConversationHistory = function (
             role: msg.role,
             content: msg.content,
             timestamp: msg.timestamp,
-            metadata: msg.metadata,
           }));
       } else {
         // Return all messages from all threads
@@ -246,11 +209,9 @@ messageSchema.statics.getConversationHistory = function (
             .filter((msg) => includeSystem || msg.role !== "system")
             .forEach((msg) => {
               allMessages.push({
-                threadId: thread.threadId,
                 role: msg.role,
                 content: msg.content,
                 timestamp: msg.timestamp,
-                metadata: msg.metadata,
               });
             });
         });
