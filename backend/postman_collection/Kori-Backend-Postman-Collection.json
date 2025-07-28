@@ -1,11 +1,11 @@
 {
   "info": {
     "name": "Kori Backend API Collection",
-    "description": "Complete Postman collection for testing all Kori backend API endpoints including authentication, chat management, message handling, image generation, and more",
+    "description": "Complete Postman collection for testing all Kori backend API endpoints including authentication, chat management, message handling, image generation, AI integration, and more. Updated with all current routes and proper parameters.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_postman_id": "kori-backend-api-complete-v3",
+    "_postman_id": "kori-backend-api-complete-v4",
     "version": {
-      "major": 3,
+      "major": 4,
       "minor": 0,
       "patch": 0
     }
@@ -43,7 +43,7 @@
     },
     {
       "key": "threadId",
-      "value": "",
+      "value": "main",
       "type": "string"
     },
     {
@@ -53,6 +53,11 @@
     },
     {
       "key": "imageId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "questionId",
       "value": "",
       "type": "string"
     }
@@ -69,7 +74,7 @@
   },
   "item": [
     {
-      "name": "🧪 Health Check",
+      "name": "🧪 Health Check & Server Status",
       "item": [
         {
           "name": "Test Server Status",
@@ -80,6 +85,25 @@
               "raw": "{{baseUrl}}/api/test",
               "host": ["{{baseUrl}}"],
               "path": ["api", "test"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test Protected Route",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/protected",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "protected"]
             }
           },
           "response": []
@@ -174,7 +198,13 @@
           "name": "Get Profile",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/auth/profile",
               "host": ["{{baseUrl}}"],
@@ -275,11 +305,74 @@
           "name": "Logout",
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/auth/logout",
               "host": ["{{baseUrl}}"],
               "path": ["api", "auth", "logout"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout All Devices",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout-all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout-all"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Profile (Alternative)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Account",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "verify"]
             }
           },
           "response": []
@@ -314,7 +407,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"My First Chat\",\n  \"initialPrompt\": \"You are a helpful assistant\",\n  \"settings\": {\n    \"maxMessages\": 100,\n    \"autoArchive\": false,\n    \"autoArchiveDays\": 30\n  }\n}"
+              "raw": "{\n  \"title\": \"My Research Chat\",\n  \"initialPrompt\": \"You are a helpful research assistant specializing in user interviews and product discovery\",\n  \"category\": \"explorative\",\n  \"settings\": {\n    \"maxMessages\": 100,\n    \"autoArchive\": false,\n    \"autoArchiveDays\": 30\n  }\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/chat",
@@ -328,7 +421,13 @@
           "name": "Get User Chats (Paginated)",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/chat?status=active&page=1&limit=10",
               "host": ["{{baseUrl}}"],
@@ -355,7 +454,13 @@
           "name": "Get All User Chats with Complete Data",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/chat/all-with-data?status=active",
               "host": ["{{baseUrl}}"],
@@ -374,7 +479,13 @@
           "name": "Search Chats by Initial Prompt",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/chat/search/initial-prompt?q=assistant&limit=10",
               "host": ["{{baseUrl}}"],
@@ -397,7 +508,13 @@
           "name": "Get Dashboard Data",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/chat/dashboard",
               "host": ["{{baseUrl}}"],
@@ -410,7 +527,13 @@
           "name": "Get Chat by ID",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/chat/{{chatId}}",
               "host": ["{{baseUrl}}"],
@@ -445,7 +568,13 @@
           "name": "Delete Chat",
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/chat/{{chatId}}",
               "host": ["{{baseUrl}}"],
@@ -458,7 +587,13 @@
           "name": "Get Chat Statistics",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/chat/{{chatId}}/statistics",
               "host": ["{{baseUrl}}"],
@@ -471,7 +606,13 @@
           "name": "Export Chat",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/chat/{{chatId}}/export?format=json",
               "host": ["{{baseUrl}}"],
@@ -499,6 +640,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
               }
             ],
             "body": {
@@ -517,7 +663,13 @@
           "name": "Remove Initial Prompt",
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/chat/{{chatId}}/initial-prompt",
               "host": ["{{baseUrl}}"],
@@ -570,7 +722,13 @@
           "name": "Get Chat Prompts",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/chat/{{chatId}}/prompts?category=technology&page=1&limit=10",
               "host": ["{{baseUrl}}"],
@@ -597,7 +755,13 @@
           "name": "Get Prompt by ID",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/chat/{{chatId}}/prompts/{{promptId}}",
               "host": ["{{baseUrl}}"],
@@ -632,7 +796,13 @@
           "name": "Delete Prompt",
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/chat/{{chatId}}/prompts/{{promptId}}",
               "host": ["{{baseUrl}}"],
@@ -669,6 +839,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
               }
             ],
             "body": {
@@ -691,6 +866,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
               }
             ],
             "body": {
@@ -709,7 +889,13 @@
           "name": "Get Chat Messages",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/chat/{{chatId}}/messages?promptId={{promptId}}&page=1&limit=20",
               "host": ["{{baseUrl}}"],
@@ -736,7 +922,13 @@
           "name": "Search Messages in Chat",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/chat/{{chatId}}/messages/search?query=JavaScript&page=1&limit=20&promptId={{promptId}}",
               "host": ["{{baseUrl}}"],
@@ -759,6 +951,122 @@
                   "value": "{{promptId}}"
                 }
               ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "❓ Question Management",
+      "item": [
+        {
+          "name": "Add Question to Chat",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('questionId', response.data.question._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"exploratory\",\n  \"question\": \"What is your biggest challenge when using this product?\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/questions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "{{chatId}}", "questions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Chat Questions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/questions?category=exploratory",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "{{chatId}}", "questions"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "exploratory"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Question",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"evaluative\",\n  \"question\": \"How would you rate your overall experience with this feature?\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/questions/{{questionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "{{chatId}}", "questions", "{{questionId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Question",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/questions/{{questionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "{{chatId}}", "questions", "{{questionId}}"]
             }
           },
           "response": []
@@ -807,7 +1115,13 @@
           "name": "Get User Images",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/images/user",
               "host": ["{{baseUrl}}"],
@@ -820,7 +1134,13 @@
           "name": "Delete Image",
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/images/{{imageId}}",
               "host": ["{{baseUrl}}"],
@@ -835,29 +1155,7 @@
       "name": "🤖 AI Integration",
       "item": [
         {
-          "name": "Gemini AI Chat (Legacy)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"prompt\": \"Tell me a short story about a robot\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/gemini",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "gemini"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "ChatGPT API (Current)",
+          "name": "ChatGPT API (Primary)",
           "request": {
             "method": "POST",
             "header": [
@@ -874,6 +1172,77 @@
               "raw": "{{baseUrl}}/api/chatgpt",
               "host": ["{{baseUrl}}"],
               "path": ["api", "chatgpt"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ChatGPT with Different Model",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Write a creative short story about artificial intelligence\",\n  \"model\": \"gpt-4\",\n  \"temperature\": 0.9\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chatgpt",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatgpt"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ChatGPT for Code Generation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Write a JavaScript function that validates an email address using regex\",\n  \"model\": \"gpt-4o-mini\",\n  \"temperature\": 0.2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chatgpt",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatgpt"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Gemini AI Chat (Legacy - Optional Auth)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Tell me a short story about a robot learning emotions\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/gemini",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "gemini"]
             }
           },
           "response": []
