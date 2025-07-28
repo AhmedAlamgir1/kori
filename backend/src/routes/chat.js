@@ -9,10 +9,12 @@ const {
   sendMessageValidation,
   addMessageValidation,
   addPromptValidation,
+  addQuestionValidation,
   updateChatValidation,
   getChatValidation,
   getPromptValidation,
   getPromptsValidation,
+  getQuestionValidation,
   searchMessagesValidation,
   exportChatValidation,
   getUserChatsValidation,
@@ -240,6 +242,48 @@ router.get(
   handleValidationErrors,
   authenticate,
   ChatController.exportChat
+);
+
+// Question management routes
+router.post(
+  "/:chatId/questions",
+  getChatValidation,
+  addQuestionValidation,
+  handleValidationErrors,
+  authenticate,
+  ChatController.addQuestion
+);
+
+router.get(
+  "/:chatId/questions",
+  getChatValidation,
+  query("category")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage("Category must be between 1 and 100 characters"),
+  handleValidationErrors,
+  authenticate,
+  ChatController.getQuestions
+);
+
+router.patch(
+  "/:chatId/questions/:questionId",
+  getChatValidation,
+  getQuestionValidation,
+  addQuestionValidation,
+  handleValidationErrors,
+  authenticate,
+  ChatController.updateQuestion
+);
+
+router.delete(
+  "/:chatId/questions/:questionId",
+  getChatValidation,
+  getQuestionValidation,
+  handleValidationErrors,
+  authenticate,
+  ChatController.deleteQuestion
 );
 
 module.exports = router;

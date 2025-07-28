@@ -16,6 +16,11 @@ const createChatValidation = [
     .trim()
     .isLength({ min: 5, max: 1000 })
     .withMessage("Initial prompt must be between 5 and 1,000 characters"),
+
+  body("category")
+    .optional()
+    .isIn(["I-want-to-explore", "I-want-to-test-validate"])
+    .withMessage("Category must be one of the predefined values"),
 ];
 
 // Add prompt validation
@@ -34,20 +39,6 @@ const addPromptValidation = [
     .withMessage("Background story is required")
     .isLength({ min: 10, max: 2000 })
     .withMessage("Background must be between 10 and 2,000 characters"),
-
-  body("category")
-    .isIn([
-      "professional",
-      "creative",
-      "educational",
-      "entertainment",
-      "wellness",
-      "technology",
-      "business",
-      "lifestyle",
-      "other",
-    ])
-    .withMessage("Category must be one of the predefined values"),
 
   body("profile.name")
     .trim()
@@ -156,6 +147,11 @@ const updateChatValidation = [
     .isIn(["active", "archived", "deleted"])
     .withMessage("Status must be 'active', 'archived', or 'deleted'"),
 
+  body("category")
+    .optional()
+    .isIn(["I-want-to-explore", "I-want-to-test-validate"])
+    .withMessage("Category must be one of the predefined values"),
+
   body("settings")
     .optional()
     .isObject()
@@ -254,21 +250,11 @@ const getDashboardValidation = [
     .withMessage("Days must be between 1 and 365"),
 ];
 
-// Get prompts validation
+// Get prompts validation (category filter now applies to chat level)
 const getPromptsValidation = [
   query("category")
     .optional()
-    .isIn([
-      "professional",
-      "creative",
-      "educational",
-      "entertainment",
-      "wellness",
-      "technology",
-      "business",
-      "lifestyle",
-      "other",
-    ])
+    .isIn(["I-want-to-explore", "I-want-to-test-validate"])
     .withMessage("Category must be one of the predefined values"),
 
   query("page")
@@ -309,15 +295,41 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
+// Add question validation
+const addQuestionValidation = [
+  body("category")
+    .trim()
+    .notEmpty()
+    .withMessage("Question category is required")
+    .isLength({ min: 1, max: 100 })
+    .withMessage("Category must be between 1 and 100 characters"),
+
+  body("question")
+    .trim()
+    .notEmpty()
+    .withMessage("Question is required")
+    .isLength({ min: 5, max: 500 })
+    .withMessage("Question must be between 5 and 500 characters"),
+];
+
+// Get question validation
+const getQuestionValidation = [
+  param("questionId")
+    .isMongoId()
+    .withMessage("Question ID must be a valid MongoDB ObjectId"),
+];
+
 module.exports = {
   createChatValidation,
   sendMessageValidation,
   addMessageValidation,
   addPromptValidation,
+  addQuestionValidation,
   updateChatValidation,
   getChatValidation,
   getPromptValidation,
   getPromptsValidation,
+  getQuestionValidation,
   searchMessagesValidation,
   exportChatValidation,
   getUserChatsValidation,

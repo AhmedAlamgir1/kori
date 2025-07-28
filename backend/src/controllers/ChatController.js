@@ -6,7 +6,7 @@ class ChatController {
   // Create a new chat
   static async createChat(req, res, next) {
     try {
-      const { title, settings, initialPrompt } = req.body;
+      const { title, settings, initialPrompt, category } = req.body;
 
       let chat;
 
@@ -19,6 +19,7 @@ class ChatController {
           title,
           settings,
           initialPrompt,
+          category,
         });
       }
 
@@ -616,6 +617,97 @@ class ChatController {
       });
 
       const response = ApiResponse.success("Prompt deleted successfully");
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Add a question to a chat
+  static async addQuestion(req, res, next) {
+    try {
+      const userId = req.user._id;
+      const { chatId } = req.params;
+      const { category, question } = req.body;
+
+      const result = await ChatService.addQuestion({
+        chatId,
+        userId,
+        questionData: { category, question },
+      });
+
+      const response = ApiResponse.success("Question added successfully", {
+        question: result,
+      });
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get questions for a chat
+  static async getQuestions(req, res, next) {
+    try {
+      const userId = req.user._id;
+      const { chatId } = req.params;
+      const { category } = req.query;
+
+      const result = await ChatService.getQuestions({
+        chatId,
+        userId,
+        category,
+      });
+
+      const response = ApiResponse.success(
+        "Questions retrieved successfully",
+        result
+      );
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Update a question
+  static async updateQuestion(req, res, next) {
+    try {
+      const userId = req.user._id;
+      const { chatId, questionId } = req.params;
+      const updateData = req.body;
+
+      const result = await ChatService.updateQuestion({
+        chatId,
+        questionId,
+        userId,
+        updateData,
+      });
+
+      const response = ApiResponse.success("Question updated successfully", {
+        question: result,
+      });
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Delete a question
+  static async deleteQuestion(req, res, next) {
+    try {
+      const userId = req.user._id;
+      const { chatId, questionId } = req.params;
+
+      await ChatService.deleteQuestion({
+        chatId,
+        questionId,
+        userId,
+      });
+
+      const response = ApiResponse.success("Question deleted successfully");
 
       res.status(response.statusCode).json(response);
     } catch (error) {

@@ -28,25 +28,6 @@ const promptSchema = new mongoose.Schema(
       required: false, // Optional for unauthenticated users
       index: true,
     },
-    category: {
-      type: String,
-      required: false, // Made optional
-      trim: true,
-      enum: {
-        values: [
-          "professional",
-          "creative",
-          "educational",
-          "entertainment",
-          "wellness",
-          "technology",
-          "business",
-          "lifestyle",
-          "other",
-        ],
-        message: "Category must be one of the predefined values",
-      },
-    },
     profile: {
       name: {
         type: String,
@@ -87,6 +68,27 @@ const promptSchema = new mongoose.Schema(
   }
 );
 
+// Question schema for storing predefined questions
+const questionSchema = new mongoose.Schema(
+  {
+    category: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: [100, "Question category cannot exceed 100 characters"],
+    },
+    question: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: [500, "Question cannot exceed 500 characters"],
+    },
+  },
+  {
+    _id: true,
+  }
+);
+
 const chatSchema = new mongoose.Schema(
   {
     userId: {
@@ -104,11 +106,21 @@ const chatSchema = new mongoose.Schema(
       },
     },
     prompts: [promptSchema], // Array of AI character prompts
+    questions: [questionSchema], // Array of predefined questions
     initialPrompt: {
       type: String,
       required: false, // Made optional
       trim: true,
       maxlength: [1000, "Initial prompt cannot exceed 1,000 characters"],
+    },
+    category: {
+      type: String,
+      required: false, // Made optional
+      trim: true,
+      enum: {
+        values: ["I-want-to-explore", "I-want-to-test-validate"],
+        message: "Category must be one of the predefined values",
+      },
     },
     status: {
       type: String,
@@ -130,7 +142,7 @@ const chatSchema = new mongoose.Schema(
 chatSchema.index({ userId: 1, createdAt: -1 });
 chatSchema.index({ userId: 1, status: 1 });
 chatSchema.index({ initialPrompt: "text" }); // Text index for searching initial prompts
-chatSchema.index({ "prompts.category": 1 });
+chatSchema.index({ category: 1 });
 chatSchema.index({ "prompts.userId": 1 });
 
 // // Virtual for message count
@@ -148,11 +160,6 @@ chatSchema.index({ "prompts.userId": 1 });
 //   if (this.messages.length === 0) return null;
 //   return this.messages[this.messages.length - 1];
 // });
-
-// Virtual for active prompts
-chatSchema.virtual("activePrompts").get(function () {
-  return this.prompts.filter((prompt) => prompt.isActive);
-});
 
 // Virtual for active message threads count (requires async population)
 chatSchema.virtual("activeThreadsCount", {
@@ -313,12 +320,42 @@ chatSchema.methods.addPrompt = function (promptData) {
   return this.prompts[this.prompts.length - 1];
 };
 
-// Instance method to get active prompts by category
-chatSchema.methods.getPromptsByCategory = function (category) {
-  return this.prompts.filter(
-    (prompt) =>
-      prompt.isActive && (category ? prompt.category === category : true)
+// Instance method to add a question
+chatSchema.methods.addQuestion = function (questionData) {
+  this.questions.push(questionData);
+  return this.questions[this.questions.length - 1];
+};
+
+// Instance method to remove a question by ID
+chatSchema.methods.removeQuestion = function (questionId) {
+  const questionIndex = this.questions.findIndex(
+    (q) => q._id.toString() === questionId.toString()
   );
+  if (questionIndex > -1) {
+    const removedQuestion = this.questions[questionIndex];
+    this.questions.splice(questionIndex, 1);
+    return removedQuestion;
+  }
+  return null;
+};
+
+// Instance method to update a question by ID
+chatSchema.methods.updateQuestion = function (questionId, updateData) {
+  const question = this.questions.id(questionId);
+  if (question) {
+    Object.keys(updateData).forEach((key) => {
+      if (key !== "_id") {
+        question[key] = updateData[key];
+      }
+    });
+    return question;
+  }
+  return null;
+};
+
+// Instance method to get questions by category
+chatSchema.methods.getQuestionsByCategory = function (category) {
+  return this.questions.filter((question) => question.category === category);
 };
 
 // Instance method to deactivate a prompt
@@ -453,15 +490,14 @@ chatSchema.statics.getChats = function ({
     .populate("userId", "fullName email");
 };
 
-// Static method to find chats by prompt category
-chatSchema.statics.getChatsByPromptCategory = function (
+// Static method to find chats by category
+chatSchema.statics.getChatsByCategory = function (
   category,
   { userId, limit = 10 }
 ) {
   const query = {
     status: "active",
-    "prompts.category": category,
-    "prompts.isActive": true,
+    category: category,
   };
 
   if (userId) {

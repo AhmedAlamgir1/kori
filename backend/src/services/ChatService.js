@@ -16,7 +16,7 @@ if (config.GEMINI_API_KEY) {
 class ChatService {
   // Create a new chat
   static async createChat(data) {
-    const { userId, title, settings, initialPrompt } = data;
+    const { userId, title, settings, initialPrompt, category } = data;
 
     // Verify user exists
     const user = await User.findById(userId);
@@ -28,6 +28,7 @@ class ChatService {
       userId: new mongoose.Types.ObjectId(userId),
       title: title || `Chat ${new Date().toLocaleDateString()}`,
       initialPrompt,
+      category,
       settings: {
         maxMessages: settings?.maxMessages || 100,
         autoArchive: settings?.autoArchive || false,
@@ -195,14 +196,13 @@ class ChatService {
     // If no promptId provided, try to get the first active prompt or create a default one
     let activePromptId = promptId;
     if (!activePromptId) {
-      const activePrompts = chat.activePrompts;
+      const activePrompts = chat.prompts.filter((prompt) => prompt.isActive);
       if (activePrompts.length > 0) {
         activePromptId = activePrompts[0]._id;
       } else {
         // Create a default prompt if none exists
         const defaultPrompt = chat.addPrompt({
           background: "General conversation",
-          category: "other",
           profile: {
             name: "Assistant",
             designation: "AI Helper",
@@ -242,9 +242,9 @@ class ChatService {
     );
 
     return {
-      chat,
       userMessage: userMsg,
       promptId: activePromptId,
+      chatId: chat._id,
     };
   }
 
@@ -263,7 +263,7 @@ class ChatService {
     // If no promptId provided, try to get the first active prompt
     let activePromptId = promptId;
     if (!activePromptId) {
-      const activePrompts = chat.activePrompts;
+      const activePrompts = chat.prompts.filter((prompt) => prompt.isActive);
       if (activePrompts.length > 0) {
         activePromptId = activePrompts[0]._id;
       } else {
@@ -285,9 +285,9 @@ class ChatService {
     );
 
     return {
-      chat,
       message,
       promptId: activePromptId,
+      chatId: chat._id,
     };
   }
 
@@ -332,7 +332,8 @@ class ChatService {
         hasNext: page * limit < total,
         hasPrev: page > 1,
       },
-      chat,
+      chatId: chat._id,
+      chatTitle: chat.title,
     };
   }
 
@@ -353,6 +354,8 @@ class ChatService {
       "tags",
       "status",
       "initialPrompt",
+      "category",
+      "questions",
     ];
     const filteredUpdates = {};
 
@@ -805,6 +808,11 @@ class ChatService {
       throw ApiError.badRequest("Either userId or sessionId must be provided");
     }
 
+    // Add category filter if provided (category is now on chat level)
+    if (category) {
+      filter.category = category;
+    }
+
     const chat = await Chat.findOne(filter);
 
     if (!chat) {
@@ -812,10 +820,6 @@ class ChatService {
     }
 
     let prompts = chat.prompts.filter((prompt) => prompt.isActive);
-
-    if (category) {
-      prompts = prompts.filter((prompt) => prompt.category === category);
-    }
 
     // Pagination
     const skip = (page - 1) * limit;
@@ -949,6 +953,110 @@ class ChatService {
 
     if (!prompt) {
       throw ApiError.notFound("Prompt not found");
+    }
+
+    await chat.save();
+
+    return true;
+  }
+
+  // Add a question to a chat
+  static async addQuestion(data) {
+    const { chatId, userId, questionData } = data;
+
+    if (!mongoose.Types.ObjectId.isValid(chatId)) {
+      throw ApiError.badRequest("Invalid chat ID");
+    }
+
+    const chat = await this.getChatById({
+      chatId,
+      userId,
+      includeMessages: false,
+    });
+
+    const question = chat.addQuestion(questionData);
+    await chat.save();
+
+    return question;
+  }
+
+  // Get questions for a chat
+  static async getQuestions(data) {
+    const { chatId, userId, category } = data;
+
+    if (!mongoose.Types.ObjectId.isValid(chatId)) {
+      throw ApiError.badRequest("Invalid chat ID");
+    }
+
+    const chat = await this.getChatById({
+      chatId,
+      userId,
+      includeMessages: false,
+    });
+
+    let questions = chat.questions;
+
+    // Filter by category if provided
+    if (category) {
+      questions = chat.getQuestionsByCategory(category);
+    }
+
+    return {
+      questions,
+      total: questions.length,
+      chatId: chat._id,
+    };
+  }
+
+  // Update a question
+  static async updateQuestion(data) {
+    const { chatId, questionId, userId, updateData } = data;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(chatId) ||
+      !mongoose.Types.ObjectId.isValid(questionId)
+    ) {
+      throw ApiError.badRequest("Invalid chat ID or question ID");
+    }
+
+    const chat = await this.getChatById({
+      chatId,
+      userId,
+      includeMessages: false,
+    });
+
+    const question = chat.updateQuestion(questionId, updateData);
+
+    if (!question) {
+      throw ApiError.notFound("Question not found");
+    }
+
+    await chat.save();
+
+    return question;
+  }
+
+  // Delete a question
+  static async deleteQuestion(data) {
+    const { chatId, questionId, userId } = data;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(chatId) ||
+      !mongoose.Types.ObjectId.isValid(questionId)
+    ) {
+      throw ApiError.badRequest("Invalid chat ID or question ID");
+    }
+
+    const chat = await this.getChatById({
+      chatId,
+      userId,
+      includeMessages: false,
+    });
+
+    const question = chat.removeQuestion(questionId);
+
+    if (!question) {
+      throw ApiError.notFound("Question not found");
     }
 
     await chat.save();
