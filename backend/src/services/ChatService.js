@@ -204,7 +204,7 @@ class ChatService {
           background: "General conversation",
           profile: {
             name: "Assistant",
-            designation: "AI Helper",
+            occupation: "AI Helper",
           },
           isActive: true,
         });

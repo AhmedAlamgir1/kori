@@ -35,11 +35,11 @@ const promptSchema = new mongoose.Schema(
         trim: true,
         maxlength: [100, "Name cannot exceed 100 characters"],
       },
-      designation: {
+      occupation: {
         type: String,
         required: false, // Made optional
         trim: true,
-        maxlength: [150, "Designation cannot exceed 150 characters"],
+        maxlength: [150, "Occupation cannot exceed 150 characters"],
       },
       age: {
         type: Number,
