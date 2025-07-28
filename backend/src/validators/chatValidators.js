@@ -85,6 +85,7 @@ const sendMessageValidation = [
 // Add message validation (for manual message addition)
 const addMessageValidation = [
   body("role")
+    .optional()
     .isIn(MESSAGE_ROLES)
     .withMessage(`Role must be one of: ${MESSAGE_ROLES.join(", ")}`),
 

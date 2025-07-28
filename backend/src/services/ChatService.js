@@ -213,9 +213,6 @@ class ChatService {
       }
     }
 
-    // Use a default thread ID for main conversation
-    const threadId = "main";
-
     // Ensure userMessage is a string (defensive programming)
     let messageContent = userMessage;
     if (typeof userMessage === "object" && userMessage !== null) {
@@ -232,12 +229,8 @@ class ChatService {
     // Add user message (role is always "user" for sendMessage)
     const userMsg = await chat.addMessage(
       activePromptId,
-      threadId,
       "user",
-      messageContent,
-      {
-        timestamp: new Date(),
-      }
+      messageContent
     );
 
     return {
@@ -272,16 +265,7 @@ class ChatService {
       }
     }
 
-    // Use a default thread ID for main conversation
-    const threadId = "main";
-
-    const message = await chat.addMessage(
-      activePromptId,
-      threadId,
-      role,
-      content,
-      metadata || {}
-    );
+    const message = await chat.addMessage(activePromptId, role, content);
 
     return {
       message,

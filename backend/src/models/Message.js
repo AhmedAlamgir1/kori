@@ -6,7 +6,7 @@ const individualMessageSchema = new mongoose.Schema(
   {
     role: {
       type: String,
-      required: [true, "Message role is required"],
+      required: [false, "Message role is required"],
       enum: {
         values: MESSAGE_ROLES,
         message: `Role must be one of: ${MESSAGE_ROLES.join(", ")}`,
