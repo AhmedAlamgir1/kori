@@ -299,6 +299,16 @@ class AuthService {
   // Google OAuth sign-in/sign-up
   static async googleAuth(googleIdToken) {
     try {
+      // Validate input
+      if (!googleIdToken || typeof googleIdToken !== "string") {
+        throw ApiError.badRequest("Invalid Google ID token format");
+      }
+
+      // Check if Google Client ID is configured
+      if (!config.GOOGLE_CLIENT_ID) {
+        throw ApiError.serverError("Google OAuth is not properly configured");
+      }
+
       // Initialize Google OAuth2 client
       const client = new OAuth2Client(config.GOOGLE_CLIENT_ID);
 
@@ -333,6 +343,7 @@ class AuthService {
           fullName: name,
           email,
           googleId,
+          googleIdToken,
           avatar: picture,
           authProvider: "google",
           isVerified: true, // Google accounts are pre-verified
@@ -342,6 +353,7 @@ class AuthService {
       } else {
         // Update existing user's info if needed
         user.fullName = name;
+        user.googleIdToken = googleIdToken;
         user.avatar = picture;
         user.isVerified = true;
         await user.save();
@@ -367,13 +379,36 @@ class AuthService {
         refreshToken,
       };
     } catch (error) {
+      // Handle specific Google Auth errors
+      if (error.message.includes("No pem found for envelope")) {
+        throw ApiError.badRequest(
+          "Invalid Google ID token format. Please ensure you're using a valid Google ID token."
+        );
+      }
+
       if (
         error.message.includes("Token used too early") ||
-        error.message.includes("Invalid token")
+        error.message.includes("Invalid token") ||
+        error.message.includes("Wrong number of segments") ||
+        error.message.includes("Invalid audience")
       ) {
         throw ApiError.unauthorized("Invalid Google token");
       }
-      throw error;
+
+      if (error.message.includes("fetch")) {
+        throw ApiError.forbidden(
+          "Unable to verify Google token. Please try again."
+        );
+      }
+
+      // Re-throw our custom API errors
+      if (error.statusCode) {
+        throw error;
+      }
+
+      // Log unexpected errors for debugging
+      console.error("Google Auth Error:", error);
+      throw ApiError.forbidden("Google authentication failed");
     }
   }
 
@@ -414,6 +449,7 @@ class AuthService {
       client.setCredentials(tokens);
 
       // Get user information
+      console.log("tokens.id_token", tokens.id_token);
       const ticket = await client.verifyIdToken({
         idToken: tokens.id_token,
         audience: config.GOOGLE_CLIENT_ID,
@@ -448,6 +484,7 @@ class AuthService {
           fullName: name,
           email,
           googleId,
+          googleIdToken: tokens.id_token,
           avatar: picture,
           authProvider: "google",
           isVerified: true, // Google accounts are pre-verified
@@ -461,6 +498,11 @@ class AuthService {
 
         if (user.fullName !== name) {
           user.fullName = name;
+          updateNeeded = true;
+        }
+
+        if (user.googleIdToken !== tokens.id_token) {
+          user.googleIdToken = tokens.id_token;
           updateNeeded = true;
         }
 

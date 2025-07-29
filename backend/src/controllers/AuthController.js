@@ -244,6 +244,17 @@ class AuthController {
         throw ApiError.badRequest("Google ID token is required");
       }
 
+      // Basic validation of token format
+      if (typeof idToken !== "string" || idToken.trim().length === 0) {
+        throw ApiError.badRequest("Invalid Google ID token format");
+      }
+
+      // Check if token looks like a JWT (has 3 parts separated by dots)
+      const tokenParts = idToken.split(".");
+      if (tokenParts.length !== 3) {
+        throw ApiError.badRequest("Google ID token must be a valid JWT format");
+      }
+
       const result = await AuthService.googleAuth(idToken);
 
       // Set refresh token as HTTP-only cookie

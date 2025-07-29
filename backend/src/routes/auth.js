@@ -63,7 +63,7 @@ router.get("/google/callback", AuthController.googleAuthCallback);
 
 router.post(
   "/google/token",
-  authRateLimiter,
+  // authRateLimiter,
   googleAuthValidation,
   handleValidationErrors,
   AuthController.googleAuth

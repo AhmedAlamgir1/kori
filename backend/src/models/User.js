@@ -35,6 +35,10 @@ const userSchema = new mongoose.Schema(
       unique: true,
       sparse: true, // Allows null values to be non-unique
     },
+    googleIdToken: {
+      type: String,
+      select: false, // Don't include ID token in queries by default for security
+    },
     avatar: {
       type: String, // URL for user avatar (from Google or uploaded)
     },
