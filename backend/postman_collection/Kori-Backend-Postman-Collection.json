@@ -3,9 +3,9 @@
     "name": "Kori Backend API Collection",
     "description": "Complete Postman collection for testing all Kori backend API endpoints including authentication, chat management, message handling, image generation, AI integration, session management, Google OAuth, and more. Updated with all current routes and proper parameters including newly implemented features.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_postman_id": "kori-backend-api-complete-v5",
+    "_postman_id": "kori-backend-api-complete-v6",
     "version": {
-      "major": 5,
+      "major": 6,
       "minor": 0,
       "patch": 0
     }
@@ -438,6 +438,25 @@
               "raw": "{{baseUrl}}/api/auth/google/token",
               "host": ["{{baseUrl}}"],
               "path": ["api", "auth", "google", "token"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Profile",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "profile"]
             }
           },
           "response": []
