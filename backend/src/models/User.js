@@ -24,9 +24,24 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
+      required: function () {
+        return !this.googleId; // Password not required if using Google OAuth
+      },
       minlength: [6, "Password must be at least 6 characters long"],
       select: false, // Don't include password in queries by default
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true, // Allows null values to be non-unique
+    },
+    avatar: {
+      type: String, // URL for user avatar (from Google or uploaded)
+    },
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
     },
     role: {
       type: String,
@@ -92,8 +107,8 @@ userSchema.virtual("isLocked").get(function () {
 
 // Pre-save middleware to hash password
 userSchema.pre("save", async function (next) {
-  // Only hash the password if it has been modified (or is new)
-  if (!this.isModified("password")) return next();
+  // Only hash the password if it has been modified (or is new) and exists
+  if (!this.isModified("password") || !this.password) return next();
 
   try {
     // Hash password with cost of 12

@@ -73,12 +73,6 @@ messageSchema.virtual("messageCount").get(function () {
   return this.messages.length;
 });
 
-// Virtual for latest message in this thread
-messageSchema.virtual("latestMessage").get(function () {
-  if (this.messages.length === 0) return null;
-  return this.messages[this.messages.length - 1];
-});
-
 // Virtual for latest message timestamp
 messageSchema.virtual("latestMessageTimestamp").get(function () {
   if (this.messages.length === 0) return null;
@@ -221,6 +215,14 @@ messageSchema.statics.getConversationHistory = function (
         );
       }
     });
+};
+
+// Static method to clear all messages for a chat and prompt
+messageSchema.statics.clearMessagesForPrompt = function (chatId, promptId) {
+  return this.updateMany(
+    { chatId, promptId, deleted: false },
+    { deleted: true }
+  );
 };
 
 const Message = mongoose.model("Message", messageSchema);

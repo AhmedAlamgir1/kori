@@ -136,12 +136,60 @@ class ChatController {
     }
   }
 
+  // Get user's current active session
+  static async getCurrentSession(req, res, next) {
+    try {
+      const userId = req.user._id;
+
+      const activeSession = await ChatService.getCurrentSession(userId);
+
+      if (!activeSession) {
+        const response = ApiResponse.success("No active session found", null);
+        return res.status(response.statusCode).json(response);
+      }
+
+      const response = ApiResponse.success(
+        "Active session retrieved successfully",
+        { session: activeSession }
+      );
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Start a new session (archives current active session if exists)
+  static async startNewSession(req, res, next) {
+    try {
+      const { settings, initialPrompt, category } = req.body;
+      const userId = req.user._id;
+
+      const newSession = await ChatService.startNewSession({
+        userId,
+        settings,
+        initialPrompt,
+        category,
+      });
+
+      const response = ApiResponse.success(
+        "New session started successfully",
+        { session: newSession },
+        201
+      );
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Send message to chat (user message + AI response)
   static async sendMessage(req, res, next) {
     try {
       const userId = req.user._id;
       const { chatId } = req.params;
-      const { message, promptId } = req.body;
+      const { message, promptId, reset = false } = req.body;
 
       // Debug logging to help identify the issue
       console.log(
@@ -155,36 +203,10 @@ class ChatController {
         userId,
         userMessage: message,
         promptId,
+        reset,
       });
 
       const response = ApiResponse.success("Message sent successfully", result);
-
-      res.status(response.statusCode).json(response);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  // Add message to chat (manual message addition)
-  static async addMessage(req, res, next) {
-    try {
-      const userId = req.user._id;
-      const { chatId } = req.params;
-      const { role, content, metadata, promptId } = req.body;
-
-      const result = await ChatService.addMessage({
-        chatId,
-        userId,
-        role,
-        content,
-        metadata,
-        promptId,
-      });
-
-      const response = ApiResponse.success(
-        "Message added successfully",
-        result
-      );
 
       res.status(response.statusCode).json(response);
     } catch (error) {

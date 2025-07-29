@@ -24,6 +24,18 @@ class ChatService {
       throw ApiError.notFound("User not found");
     }
 
+    // Check if user already has an active chat session
+    const existingChat = await Chat.findOne({
+      userId: new mongoose.Types.ObjectId(userId),
+      status: "active",
+    });
+
+    if (existingChat) {
+      // Archive the existing chat to maintain only one active session
+      existingChat.status = "archived";
+      await existingChat.save();
+    }
+
     const chat = new Chat({
       userId: new mongoose.Types.ObjectId(userId),
       initialPrompt,
@@ -186,9 +198,50 @@ class ChatService {
     return chat;
   }
 
+  // Get user's current active session
+  static async getCurrentSession(userId) {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw ApiError.badRequest("Invalid user ID");
+    }
+
+    const activeSession = await Chat.findOne({
+      userId: new mongoose.Types.ObjectId(userId),
+      status: "active",
+    })
+      .populate("userId", "fullName email")
+      .sort({ updatedAt: -1 });
+
+    return activeSession;
+  }
+
+  // Archive current session and start new one
+  static async startNewSession(data) {
+    const { userId, settings, initialPrompt, category } = data;
+
+    // Archive any existing active session
+    await Chat.updateMany(
+      {
+        userId: new mongoose.Types.ObjectId(userId),
+        status: "active",
+      },
+      {
+        status: "archived",
+      }
+    );
+
+    // Create new session
+    return this.createChat(data);
+  }
+
   // Send message and get AI response
   static async sendMessage(data) {
-    const { chatId, userId, userMessage, promptId = null } = data;
+    const {
+      chatId,
+      userId,
+      userMessage,
+      promptId = null,
+      reset = false,
+    } = data;
 
     const chat = await this.getChatById({ chatId, userId });
 
@@ -211,6 +264,12 @@ class ChatService {
         await chat.save();
         activePromptId = defaultPrompt._id;
       }
+    }
+
+    // If reset is true, clear all existing messages for this chat and prompt
+    if (reset) {
+      const Message = require("../models/Message");
+      await Message.clearMessagesForPrompt(chatId, activePromptId);
     }
 
     // Ensure userMessage is a string (defensive programming)
@@ -237,40 +296,7 @@ class ChatService {
       userMessage: userMsg,
       promptId: activePromptId,
       chatId: chat._id,
-    };
-  }
-
-  // Add message manually (for system messages or imports)
-  static async addMessage(data) {
-    const { chatId, userId, role, content, metadata, promptId = null } = data;
-
-    if (!MESSAGE_ROLES.includes(role)) {
-      throw ApiError.badRequest(
-        `Invalid message role. Allowed roles: ${MESSAGE_ROLES.join(", ")}`
-      );
-    }
-
-    const chat = await this.getChatById({ chatId, userId });
-
-    // If no promptId provided, try to get the first active prompt
-    let activePromptId = promptId;
-    if (!activePromptId) {
-      const activePrompts = chat.prompts.filter((prompt) => prompt.isActive);
-      if (activePrompts.length > 0) {
-        activePromptId = activePrompts[0]._id;
-      } else {
-        throw ApiError.badRequest(
-          "No active prompt found. Please provide promptId or create a prompt first."
-        );
-      }
-    }
-
-    const message = await chat.addMessage(activePromptId, role, content);
-
-    return {
-      message,
-      promptId: activePromptId,
-      chatId: chat._id,
+      reset: reset,
     };
   }
 
@@ -515,18 +541,47 @@ class ChatService {
   static async exportChat(data) {
     const { chatId, userId, format = "json" } = data;
 
-    const chat = await this.getChatById({ chatId, userId });
+    const chat = await this.getChatById({
+      chatId,
+      userId,
+      includeMessages: false,
+    });
+
+    // Get all non-deleted messages for this chat
+    const Message = require("../models/Message");
+    const messageThreads = await Message.find({
+      chatId: new mongoose.Types.ObjectId(chatId),
+      deleted: false,
+    }).sort({ updatedAt: 1 });
+
+    // Extract all individual messages from threads
+    const allMessages = [];
+    messageThreads.forEach((thread) => {
+      thread.messages.forEach((msg) => {
+        allMessages.push({
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.timestamp,
+          promptId: thread.promptId,
+        });
+      });
+    });
+
+    // Sort messages by timestamp
+    allMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
     const exportData = {
       chatId: chat._id,
       createdAt: chat.createdAt,
-      messages: chat.messages.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-        timestamp: msg.timestamp,
-        metadata: msg.metadata,
-      })),
-      statistics: chat.statistics,
+      messages: allMessages,
+      statistics: {
+        totalMessages: allMessages.length,
+        messagesByRole: {
+          user: allMessages.filter((m) => m.role === "user").length,
+          assistant: allMessages.filter((m) => m.role === "assistant").length,
+          system: allMessages.filter((m) => m.role === "system").length,
+        },
+      },
     };
 
     let formattedData;

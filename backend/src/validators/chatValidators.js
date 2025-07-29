@@ -80,47 +80,11 @@ const sendMessageValidation = [
     .optional()
     .isMongoId()
     .withMessage("Prompt ID must be a valid MongoDB ObjectId"),
-];
 
-// Add message validation (for manual message addition)
-const addMessageValidation = [
-  body("role")
+  body("reset")
     .optional()
-    .isIn(MESSAGE_ROLES)
-    .withMessage(`Role must be one of: ${MESSAGE_ROLES.join(", ")}`),
-
-  body("promptId")
-    .optional()
-    .isMongoId()
-    .withMessage("Prompt ID must be a valid MongoDB ObjectId"),
-
-  body("content")
-    .trim()
-    .notEmpty()
-    .withMessage("Message content is required")
-    .isLength({ min: 1, max: 10000 })
-    .withMessage("Message content must be between 1 and 10,000 characters"),
-
-  body("metadata")
-    .optional()
-    .isObject()
-    .withMessage("Metadata must be an object"),
-
-  body("metadata.tokenCount")
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage("Token count must be a non-negative integer"),
-
-  body("metadata.processingTime")
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage("Processing time must be a non-negative integer"),
-
-  body("metadata.model")
-    .optional()
-    .trim()
-    .isLength({ min: 1, max: 100 })
-    .withMessage("Model name must be between 1 and 100 characters"),
+    .isBoolean()
+    .withMessage("Reset must be a boolean value"),
 ];
 
 // Update chat validation
@@ -313,7 +277,6 @@ const getQuestionValidation = [
 module.exports = {
   createChatValidation,
   sendMessageValidation,
-  addMessageValidation,
   addPromptValidation,
   addQuestionValidation,
   updateChatValidation,

@@ -1,11 +1,11 @@
 {
   "info": {
     "name": "Kori Backend API Collection",
-    "description": "Complete Postman collection for testing all Kori backend API endpoints including authentication, chat management, message handling, image generation, AI integration, and more. Updated with all current routes and proper parameters.",
+    "description": "Complete Postman collection for testing all Kori backend API endpoints including authentication, chat management, message handling, image generation, AI integration, session management, Google OAuth, and more. Updated with all current routes and proper parameters including newly implemented features.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_postman_id": "kori-backend-api-complete-v4",
+    "_postman_id": "kori-backend-api-complete-v5",
     "version": {
-      "major": 4,
+      "major": 5,
       "minor": 0,
       "patch": 0
     }
@@ -48,6 +48,11 @@
     },
     {
       "key": "messageId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "questionId",
       "value": "",
       "type": "string"
     },
@@ -373,6 +378,131 @@
               "raw": "{{baseUrl}}/api/auth/verify",
               "host": ["{{baseUrl}}"],
               "path": ["api", "auth", "verify"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Google OAuth Redirect",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/google",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "google"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Google OAuth Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/google/callback?code=AUTH_CODE&state=STATE",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "google", "callback"],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "AUTH_CODE",
+                  "description": "Authorization code from Google"
+                },
+                {
+                  "key": "state",
+                  "value": "STATE",
+                  "description": "State parameter for security"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Google OAuth Token Exchange",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"GOOGLE_ID_TOKEN_HERE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/google/token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "google", "token"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔄 Session Management",
+      "item": [
+        {
+          "name": "Get Current Active Session",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/session/current",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "session", "current"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Start New Session (Archive Current)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('chatId', response.data.chat._id);",
+                  "    console.log('New session started with ID:', response.data.chat._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New Session Chat\",\n  \"initialPrompt\": \"You are a helpful assistant for a new conversation session\",\n  \"category\": \"general\",\n  \"settings\": {\n    \"maxMessages\": 100,\n    \"autoArchive\": false,\n    \"autoArchiveDays\": 30\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/session/new",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "session", "new"]
             }
           },
           "response": []
@@ -848,7 +978,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"promptId\": \"{{promptId}}\",\n  \"threadId\": \"{{threadId}}\",\n  \"message\": \"Hello, can you help me with JavaScript?\",\n  \"model\": \"gpt-4o-mini\",\n  \"temperature\": 0.7\n}"
+              "raw": "{\n  \"promptId\": \"{{promptId}}\",\n  \"userMessage\": \"Hello, can you help me with JavaScript programming?\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/chat/{{chatId}}/messages",
@@ -875,7 +1005,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"promptId\": \"{{promptId}}\",\n  \"threadId\": \"{{threadId}}\",\n  \"role\": \"user\",\n  \"content\": \"This is a manually added message\"\n}"
+              "raw": "{\n  \"promptId\": \"{{promptId}}\",\n  \"role\": \"user\",\n  \"content\": \"This is a manually added message\",\n  \"metadata\": {\n    \"source\": \"manual\",\n    \"tokenCount\": 6\n  }\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/chat/{{chatId}}/messages/add",
@@ -1155,73 +1285,7 @@
       "name": "🤖 AI Integration",
       "item": [
         {
-          "name": "ChatGPT API (Primary)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"prompt\": \"Explain quantum computing in simple terms\",\n  \"model\": \"gpt-4o-mini\",\n  \"temperature\": 0.7\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/chatgpt",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "chatgpt"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "ChatGPT with Different Model",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"prompt\": \"Write a creative short story about artificial intelligence\",\n  \"model\": \"gpt-4\",\n  \"temperature\": 0.9\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/chatgpt",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "chatgpt"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "ChatGPT for Code Generation",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"prompt\": \"Write a JavaScript function that validates an email address using regex\",\n  \"model\": \"gpt-4o-mini\",\n  \"temperature\": 0.2\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/chatgpt",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "chatgpt"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Gemini AI Chat (Legacy - Optional Auth)",
+          "name": "Gemini AI Chat (Optional Auth)",
           "request": {
             "method": "POST",
             "header": [
@@ -1232,12 +1296,57 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{accessToken}}",
-                "type": "text"
+                "type": "text",
+                "description": "Optional - include for authenticated requests"
               }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"prompt\": \"Tell me a short story about a robot learning emotions\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/gemini",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "gemini"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Gemini AI Code Generation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Write a JavaScript function that validates an email address using regex\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/gemini",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "gemini"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Gemini AI Explanations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Explain quantum computing in simple terms\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/gemini",

@@ -114,7 +114,19 @@ const resetPasswordValidation = [
 
 // Refresh token validation
 const refreshTokenValidation = [
-  body("refreshToken").notEmpty().withMessage("Refresh token is required"),
+  body("refreshToken")
+    .optional()
+    .notEmpty()
+    .withMessage("Refresh token cannot be empty"),
+];
+
+// Google OAuth validation
+const googleAuthValidation = [
+  body("idToken")
+    .notEmpty()
+    .withMessage("Google ID token is required")
+    .isString()
+    .withMessage("Google ID token must be a valid string"),
 ];
 
 // Middleware to handle validation errors
@@ -143,5 +155,6 @@ module.exports = {
   forgotPasswordValidation,
   resetPasswordValidation,
   refreshTokenValidation,
+  googleAuthValidation,
   handleValidationErrors,
 };

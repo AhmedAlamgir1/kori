@@ -10,6 +10,7 @@ const {
   forgotPasswordValidation,
   resetPasswordValidation,
   refreshTokenValidation,
+  googleAuthValidation,
   handleValidationErrors,
 } = require("../validators/authValidators");
 
@@ -53,6 +54,19 @@ router.post(
   resetPasswordValidation,
   handleValidationErrors,
   AuthController.resetPassword
+);
+
+// Google OAuth routes
+router.get("/google", authRateLimiter, AuthController.googleAuthRedirect);
+
+router.get("/google/callback", AuthController.googleAuthCallback);
+
+router.post(
+  "/google/token",
+  authRateLimiter,
+  googleAuthValidation,
+  handleValidationErrors,
+  AuthController.googleAuth
 );
 
 // Protected routes (authentication required)

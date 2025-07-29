@@ -2,6 +2,8 @@ const User = require("../models/User");
 const JWTService = require("../utils/jwt");
 const ApiError = require("../utils/ApiError");
 const crypto = require("crypto");
+const { OAuth2Client } = require("google-auth-library");
+const config = require("../config/config");
 
 class AuthService {
   // Register new user
@@ -14,11 +16,15 @@ class AuthService {
       throw ApiError.conflict("User with this email already exists");
     }
 
-    // Create new user
+    // Create new user with consistent properties
     const user = new User({
       fullName,
       email,
       password,
+      authProvider: "local", // Explicitly set for local registration
+      role: "user", // Default role
+      isVerified: false, // Local users need to verify their email
+      avatar: null, // No avatar for local users initially
     });
 
     await user.save();
@@ -31,10 +37,11 @@ class AuthService {
     // Save refresh token
     await user.addRefreshToken(refreshToken);
 
-    // Return user without password
+    // Return user without sensitive data (consistent with Google OAuth)
     const userResponse = user.toObject();
     delete userResponse.password;
     delete userResponse.refreshTokens;
+    delete userResponse.googleId; // Remove googleId even if null for consistency
 
     return {
       user: userResponse,
@@ -75,12 +82,13 @@ class AuthService {
     // Save refresh token
     await user.addRefreshToken(refreshToken);
 
-    // Return user without sensitive data
+    // Return user without sensitive data (consistent structure)
     const userResponse = user.toObject();
     delete userResponse.password;
     delete userResponse.refreshTokens;
     delete userResponse.loginAttempts;
     delete userResponse.lockUntil;
+    delete userResponse.googleId; // Remove googleId for consistency
 
     return {
       user: userResponse,
@@ -286,6 +294,216 @@ class AuthService {
     await user.save();
 
     return { message: "Account verified successfully" };
+  }
+
+  // Google OAuth sign-in/sign-up
+  static async googleAuth(googleIdToken) {
+    try {
+      // Initialize Google OAuth2 client
+      const client = new OAuth2Client(config.GOOGLE_CLIENT_ID);
+
+      // Verify the Google ID token
+      const ticket = await client.verifyIdToken({
+        idToken: googleIdToken,
+        audience: config.GOOGLE_CLIENT_ID,
+      });
+
+      const payload = ticket.getPayload();
+      const { sub: googleId, email, name, picture } = payload;
+
+      if (!email) {
+        throw ApiError.badRequest("Email not provided by Google");
+      }
+
+      // Check if user already exists with this Google ID
+      let user = await User.findOne({ googleId });
+
+      if (!user) {
+        // Check if user exists with this email but different auth provider
+        const existingUser = await User.findOne({ email });
+
+        if (existingUser && existingUser.authProvider === "local") {
+          throw ApiError.conflict(
+            "An account with this email already exists. Please sign in with your password."
+          );
+        }
+
+        // Create new user
+        user = new User({
+          fullName: name,
+          email,
+          googleId,
+          avatar: picture,
+          authProvider: "google",
+          isVerified: true, // Google accounts are pre-verified
+        });
+
+        await user.save();
+      } else {
+        // Update existing user's info if needed
+        user.fullName = name;
+        user.avatar = picture;
+        user.isVerified = true;
+        await user.save();
+      }
+
+      // Generate tokens
+      const tokenPayload = { userId: user._id, email: user.email };
+      const { accessToken, refreshToken } =
+        JWTService.generateTokenPair(tokenPayload);
+
+      // Save refresh token
+      await user.addRefreshToken(refreshToken);
+
+      // Return user without sensitive data
+      const userResponse = user.toObject();
+      delete userResponse.password;
+      delete userResponse.refreshTokens;
+      delete userResponse.googleId;
+
+      return {
+        user: userResponse,
+        accessToken,
+        refreshToken,
+      };
+    } catch (error) {
+      if (
+        error.message.includes("Token used too early") ||
+        error.message.includes("Invalid token")
+      ) {
+        throw ApiError.unauthorized("Invalid Google token");
+      }
+      throw error;
+    }
+  }
+
+  // Generate Google OAuth URL for frontend redirect
+  static generateGoogleAuthUrl(state = null) {
+    const client = new OAuth2Client(
+      config.GOOGLE_CLIENT_ID,
+      config.GOOGLE_CLIENT_SECRET,
+      config.GOOGLE_REDIRECT_URI
+    );
+
+    const scopes = [
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile",
+    ];
+
+    const authUrl = client.generateAuthUrl({
+      access_type: "offline",
+      scope: scopes,
+      state: state, // Can be used to maintain state during OAuth flow
+      prompt: "consent", // Force consent screen to get refresh token
+    });
+
+    return authUrl;
+  }
+
+  // Handle Google OAuth callback
+  static async handleGoogleCallback(code) {
+    try {
+      const client = new OAuth2Client(
+        config.GOOGLE_CLIENT_ID,
+        config.GOOGLE_CLIENT_SECRET,
+        config.GOOGLE_REDIRECT_URI
+      );
+
+      // Exchange authorization code for tokens
+      const { tokens } = await client.getTokens(code);
+      client.setCredentials(tokens);
+
+      // Get user information
+      const ticket = await client.verifyIdToken({
+        idToken: tokens.id_token,
+        audience: config.GOOGLE_CLIENT_ID,
+      });
+
+      const payload = ticket.getPayload();
+      const { sub: googleId, email, name, picture, email_verified } = payload;
+
+      if (!email) {
+        throw ApiError.badRequest("Email not provided by Google");
+      }
+
+      if (!email_verified) {
+        throw ApiError.badRequest("Google email is not verified");
+      }
+
+      // Check if user already exists with this Google ID
+      let user = await User.findOne({ googleId });
+
+      if (!user) {
+        // Check if user exists with this email but different auth provider
+        const existingUser = await User.findOne({ email });
+
+        if (existingUser && existingUser.authProvider === "local") {
+          throw ApiError.conflict(
+            "An account with this email already exists. Please sign in with your password."
+          );
+        }
+
+        // Create new user with consistent properties
+        user = new User({
+          fullName: name,
+          email,
+          googleId,
+          avatar: picture,
+          authProvider: "google",
+          isVerified: true, // Google accounts are pre-verified
+          role: "user", // Default role
+        });
+
+        await user.save();
+      } else {
+        // Update existing user's info if needed
+        let updateNeeded = false;
+
+        if (user.fullName !== name) {
+          user.fullName = name;
+          updateNeeded = true;
+        }
+
+        if (user.avatar !== picture) {
+          user.avatar = picture;
+          updateNeeded = true;
+        }
+
+        if (!user.isVerified) {
+          user.isVerified = true;
+          updateNeeded = true;
+        }
+
+        if (updateNeeded) {
+          await user.save();
+        }
+      }
+
+      // Generate tokens
+      const tokenPayload = { userId: user._id, email: user.email };
+      const { accessToken, refreshToken } =
+        JWTService.generateTokenPair(tokenPayload);
+
+      // Save refresh token
+      await user.addRefreshToken(refreshToken);
+
+      // Return user without sensitive data
+      const userResponse = user.toObject();
+      delete userResponse.password;
+      delete userResponse.refreshTokens;
+      delete userResponse.googleId;
+
+      return {
+        user: userResponse,
+        accessToken,
+        refreshToken,
+      };
+    } catch (error) {
+      if (error.message.includes("invalid_grant")) {
+        throw ApiError.unauthorized("Invalid or expired authorization code");
+      }
+      throw error;
+    }
   }
 }
 

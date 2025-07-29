@@ -234,6 +234,111 @@ class AuthController {
       next(error);
     }
   }
+
+  // Google OAuth sign-in/sign-up
+  static async googleAuth(req, res, next) {
+    try {
+      const { idToken } = req.body;
+
+      if (!idToken) {
+        throw ApiError.badRequest("Google ID token is required");
+      }
+
+      const result = await AuthService.googleAuth(idToken);
+
+      // Set refresh token as HTTP-only cookie
+      const cookieOptions = {
+        httpOnly: true,
+        secure: config.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      };
+
+      res.cookie("refreshToken", result.refreshToken, cookieOptions);
+
+      const response = ApiResponse.success("Google authentication successful", {
+        user: result.user,
+        accessToken: result.accessToken,
+      });
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Google OAuth - Redirect to Google consent screen
+  static async googleAuthRedirect(req, res, next) {
+    try {
+      const { state } = req.query; // Optional state parameter for maintaining client state
+
+      const authUrl = AuthService.generateGoogleAuthUrl(state);
+
+      // Redirect user to Google OAuth consent screen
+      res.redirect(authUrl);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Google OAuth - Handle callback from Google
+  static async googleAuthCallback(req, res, next) {
+    try {
+      const { code, error, state } = req.query;
+
+      // Handle OAuth errors
+      if (error) {
+        const errorMessage =
+          error === "access_denied"
+            ? "Access denied by user"
+            : "OAuth authentication failed";
+
+        // Redirect to frontend with error
+        const frontendUrl = `${
+          config.FRONTEND_URL
+        }/auth/callback?error=${encodeURIComponent(errorMessage)}`;
+        return res.redirect(frontendUrl);
+      }
+
+      // Handle missing authorization code
+      if (!code) {
+        const frontendUrl = `${
+          config.FRONTEND_URL
+        }/auth/callback?error=${encodeURIComponent(
+          "Authorization code not provided"
+        )}`;
+        return res.redirect(frontendUrl);
+      }
+
+      // Process the OAuth callback
+      const result = await AuthService.handleGoogleCallback(code);
+
+      // Set refresh token as HTTP-only cookie
+      const cookieOptions = {
+        httpOnly: true,
+        secure: config.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      };
+
+      res.cookie("refreshToken", result.refreshToken, cookieOptions);
+
+      // Redirect to frontend with success and access token
+      const frontendUrl = `${
+        config.FRONTEND_URL
+      }/auth/callback?success=true&token=${result.accessToken}${
+        state ? `&state=${state}` : ""
+      }`;
+      res.redirect(frontendUrl);
+    } catch (error) {
+      // Handle authentication errors
+      const errorMessage = error.message || "Authentication failed";
+      const frontendUrl = `${
+        config.FRONTEND_URL
+      }/auth/callback?error=${encodeURIComponent(errorMessage)}`;
+      res.redirect(frontendUrl);
+    }
+  }
 }
 
 module.exports = AuthController;

@@ -7,7 +7,6 @@ const { authenticate, optionalAuth } = require("../middleware/auth");
 const {
   createChatValidation,
   sendMessageValidation,
-  addMessageValidation,
   addPromptValidation,
   addQuestionValidation,
   updateChatValidation,
@@ -79,6 +78,18 @@ router.get(
   authenticate,
   handleValidationErrors,
   ChatController.getDashboard
+);
+
+// Session management routes
+router.get("/session/current", authenticate, ChatController.getCurrentSession);
+
+router.post(
+  "/session/new",
+  chatRateLimiter,
+  createChatValidation,
+  handleValidationErrors,
+  authenticate,
+  ChatController.startNewSession
 );
 
 router.get(
@@ -186,15 +197,6 @@ router.post(
   sendMessageValidation,
   handleValidationErrors,
   ChatController.sendMessage
-);
-
-router.post(
-  "/:chatId/messages/add",
-  getChatValidation,
-  addMessageValidation,
-  handleValidationErrors,
-  authenticate,
-  ChatController.addMessage
 );
 
 router.get(

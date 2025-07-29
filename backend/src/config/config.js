@@ -33,6 +33,14 @@ const config = {
   // Rate limiting
   RATE_LIMIT_WINDOW: 15 * 60 * 1000, // 15 minutes
   RATE_LIMIT_MAX_REQUESTS: 100,
+
+  // Google OAuth Configuration
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+  GOOGLE_REDIRECT_URI:
+    process.env.GOOGLE_REDIRECT_URI ||
+    "http://localhost:3002/api/auth/google/callback",
+  FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:3000",
 };
 
 module.exports = config;
