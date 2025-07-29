@@ -6,10 +6,10 @@ import path from "path";
 export default defineConfig({
   server: {
     port: 3000,
-    host: 'localhost',
+    host: "localhost",
     proxy: {
-      '/api': {
-        target: 'http://localhost:3002',
+      "/api": {
+        target: "https://kori-ui.vercel.app/",
         changeOrigin: true,
         secure: false,
       },
