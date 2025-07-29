@@ -339,6 +339,28 @@ class AuthController {
       res.redirect(frontendUrl);
     }
   }
+
+  // Delete user profile
+  static async deleteProfile(req, res, next) {
+    try {
+      const userId = req.user._id;
+
+      await AuthService.deleteProfile(userId);
+
+      // Clear refresh token cookie
+      res.clearCookie("refreshToken");
+
+      const response = ApiResponse.success(
+        "Profile deleted successfully",
+        null,
+        200
+      );
+
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = AuthController;

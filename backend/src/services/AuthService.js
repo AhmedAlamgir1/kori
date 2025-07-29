@@ -505,6 +505,46 @@ class AuthService {
       throw error;
     }
   }
+
+  // Delete user profile and associated data
+  static async deleteProfile(userId) {
+    const mongoose = require("mongoose");
+
+    // Ensure userId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw ApiError.badRequest("Invalid user ID");
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw ApiError.notFound("User not found");
+    }
+
+    // Convert userId to ObjectId for consistency
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    try {
+      // Soft delete all user's chats (set status to 'deleted')
+      const Chat = require("../models/Chat");
+      await Chat.updateMany({ userId: userObjectId }, { status: "deleted" });
+
+      // Soft delete all user's messages
+      const Message = require("../models/Message");
+      await Message.updateMany({ userId: userObjectId }, { deleted: true });
+
+      // Delete the user account
+      await User.findByIdAndDelete(userObjectId);
+
+      return { message: "Profile deleted successfully" };
+    } catch (error) {
+      // Log the actual error for debugging
+      console.error("Delete profile error:", error);
+
+      throw ApiError.internalError(
+        `Failed to delete user profile: ${error.message}`
+      );
+    }
+  }
 }
 
 module.exports = AuthService;

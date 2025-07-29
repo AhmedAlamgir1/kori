@@ -93,4 +93,6 @@ router.put(
 
 router.put("/verify", AuthController.verifyAccount);
 
+router.delete("/profile", AuthController.deleteProfile);
+
 module.exports = router;
