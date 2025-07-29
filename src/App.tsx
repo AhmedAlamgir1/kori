@@ -12,9 +12,10 @@ import Understand from "./pages/Understand";
 import LockScreen from "./components/LockScreen";
 import MobileBlocker from "./components/MobileBlocker";
 import { useIsMobile } from "./hooks/useIsMobile";
-import Login from "./pages/login";
+
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/dashboard";
+import Login from "./pages/Login";
 
 const queryClient = new QueryClient();
 
