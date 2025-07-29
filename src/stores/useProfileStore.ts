@@ -7,7 +7,7 @@ interface ProfileState {
   selectedProfile: RespondentProfile | null;
   selectedProfileIndex: number | null;
   regenerationsLeft: number;
-  setProfiles: (profiles: RespondentProfile[]) => void;
+  setProfiles: (profiles: RespondentProfile[] | ((prev: RespondentProfile[]) => RespondentProfile[])) => void;
   addProfile: (profile: RespondentProfile) => void;
   selectProfile: (index: number | null) => void;
   decrementRegenerations: () => void;
@@ -43,12 +43,15 @@ const useProfileStore = create<ProfileState>()(
       regenerationsLeft: 3,
       
       setProfiles: (profiles) => set((state) => { 
+        // Handle both function and direct value updates
+        const newProfiles = typeof profiles === 'function' ? profiles(state.profiles) : profiles;
+        
         let newSelectedProfileIndex = null;
         let newSelectedProfile = null;
         
         // Maintain selection if possible
         if (state.selectedProfile) {
-          const index = profiles.findIndex(p => 
+          const index = newProfiles.findIndex(p => 
             p.name === state.selectedProfile?.name && 
             p.age === state.selectedProfile?.age && 
             p.occupation === state.selectedProfile?.occupation
@@ -56,12 +59,12 @@ const useProfileStore = create<ProfileState>()(
           
           if (index !== -1) {
             newSelectedProfileIndex = index;
-            newSelectedProfile = profiles[index];
+            newSelectedProfile = newProfiles[index];
           }
         }
         
         return {
-          profiles,
+          profiles: newProfiles,
           selectedProfileIndex: newSelectedProfileIndex,
           selectedProfile: newSelectedProfile
         };

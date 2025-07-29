@@ -6,6 +6,7 @@ import { RespondentProfile } from "../profile/types";
 import { toast } from "sonner";
 import { navigateToTab } from "../ResearchDashboard";
 import useProfileStore from "@/stores/useProfileStore";
+import userpic from '../../../assets/profile-pic.jpeg'
 
 interface ProfileCardProps {
   profile: RespondentProfile;
@@ -95,8 +96,29 @@ Unique Perspective: ${profile.perspective}
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`rounded-full p-2 ${isSelected ? 'bg-indigo-400' : 'bg-indigo-600'}`}>
-              <UserRound className="h-6 w-6 text-white" />
+            <div className={`rounded-full p-1 ${isSelected ? 'bg-indigo-400' : 'bg-indigo-600'}`}>
+              {profile.imageLoading ? (
+                <div className="size-32 rounded-full bg-slate-700 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400"></div>
+                </div>
+              ) : profile.image ? (
+                <img 
+                  src={profile.image} 
+                  alt={`${profile.name}'s profile picture`} 
+                  className="size-32 rounded-full object-cover"
+                  onError={(e) => {
+                    // Fallback to default image if generated image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.src = userpic;
+                  }}
+                />
+              ) : (
+                <img 
+                  src={userpic} 
+                  alt={`${profile.name}'s profile picture`} 
+                  className="size-32 rounded-full object-cover"
+                />
+              )}
             </div>
             <div>
               <CardTitle className="text-white flex items-center gap-2">

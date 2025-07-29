@@ -6,6 +6,8 @@ export interface RespondentProfile {
   occupation: string;
   background: string;
   perspective: string;
+  image?: string;
+  imageLoading?: boolean;
   isCustom?: boolean;
 }
 
