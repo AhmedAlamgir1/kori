@@ -410,7 +410,7 @@ class AuthService {
       );
 
       // Exchange authorization code for tokens
-      const { tokens } = await client.getTokens(code);
+      const { tokens } = await client.getToken(code);
       client.setCredentials(tokens);
 
       // Get user information

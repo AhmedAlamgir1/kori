@@ -329,6 +329,7 @@ class AuthController {
       }/auth/callback?success=true&token=${result.accessToken}${
         state ? `&state=${state}` : ""
       }`;
+      console.log("frontendUrl", frontendUrl);
       res.redirect(frontendUrl);
     } catch (error) {
       // Handle authentication errors
