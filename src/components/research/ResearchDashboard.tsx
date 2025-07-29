@@ -117,7 +117,7 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({
       selectProfile(null);
     }
   }, [profiles, selectProfile]); // Dependencies include store values
-
+  
   return (
     <div>
       {/* Use the value prop to control the active tab */}
@@ -151,7 +151,10 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({
           <div className={`${activeTab === "profiles" ? "block" : "hidden"} min-h-[400px]`}>
             <div className="flex flex-col h-full">
               <div className="flex-grow">
-                <RespondentProfileGenerator opportunity={opportunity} researchApproach={researchApproach} />
+                  <RespondentProfileGenerator 
+                    opportunity={opportunity} 
+                    researchApproach={researchApproach} 
+                  />
               </div>
             </div>
           </div>

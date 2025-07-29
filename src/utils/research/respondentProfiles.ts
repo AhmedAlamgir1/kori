@@ -2,6 +2,8 @@ import { toast } from "sonner";
 import { callChatGPTProxy } from "../api/geminiApi";
 import { generateProfileImage } from "../api/replicateApi";
 import { log } from "console";
+import { useChatStore } from '@/stores/useChatStore';
+import { createPromptForChat } from '@/utils/api/chatApi';
 
 interface GenerationOptions {
   desiredAgeRange?: "teen" | "young adult" | "middle-aged" | "older";
@@ -37,10 +39,32 @@ async function generateImagesForProfiles(profiles: Profile[], onImageGenerated: 
   await Promise.allSettled(imagePromises);
 }
 
+// Create a prompt for a given profile and chat
+export async function createPromptForProfile(profile: Profile, chatId: string) {
+  const promptPayload = {
+    imageUrl: profile.image,
+    background: profile.background,
+    uniquePerspective: profile.perspective,
+    profile: {
+      name: profile.name,
+      age: profile.age,
+      occupation: profile.occupation,
+    },
+  };
+  try {
+    const data = await createPromptForChat(chatId, promptPayload);
+    toast.success('Prompt created successfully!');
+    return data;
+  } catch (error: any) {
+    toast.error(error.message || 'Failed to create prompt');
+    throw error;
+  }
+}
+
 // Generate respondent profiles for user research
 export async function generateRespondentProfiles(
-  opportunity: string, 
-  researchApproach: "explorative" | "evaluative" = "explorative",
+  opportunity: string,
+  researchApproach: string,
   options?: GenerationOptions,
   onImageGenerated?: (index: number, imageUrl: string) => void
 ): Promise<Profile[]> {
@@ -240,10 +264,26 @@ export async function generateRespondentProfiles(
       ...profile,
       imageLoading: true
     }));
+
+    // Get chatId from Zustand store
+    const chatId = useChatStore.getState().chatId;
+    if (!chatId) {
+      throw new Error('No chatId found in global store.');
+    }
+
+    // Save prompts in DB for each profile before image generation
+    await Promise.allSettled(
+      profilesWithLoadingState.map(profile =>
+        createPromptForProfile(profile, chatId).catch(e => {
+          console.error('Prompt creation failed for profile', profile.name, e);
+        })
+      )
+    );
+   
     if (onImageGenerated) {
       generateImagesForProfiles(profilesWithLoadingState, onImageGenerated);
     }
-
+   
     return profilesWithLoadingState;
   } catch (error) {
     console.error("Error generating respondent profiles:", error);

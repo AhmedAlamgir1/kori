@@ -2,10 +2,34 @@ import React from "react";
 import { BookOpen, Lightbulb, Home, HomeIcon, User, Settings, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from 'react';
+import { fetchAllUserChats } from '@/utils/api/chatApi';
+import { useChatStore } from '@/stores/useChatStore';
+import { Link } from "react-router-dom";
 
-const Dashboard: React.FC = () => {
+function Dashboard() {
 
   const navigate = useNavigate();
+  const { chats, setChats } = useChatStore();
+  const [chatError, setChatError] = useState(false);
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  useEffect(() => {
+    async function loadChats() {
+      try {
+        const data = await fetchAllUserChats();
+        setChats(data.data?.chats || []);
+        setChatError(false);
+      } catch (e) {
+        setChatError(true);
+      }
+    }
+    loadChats();
+  }, [setChats]);
+
+  const handleChatClick = (chatId: string) => {
+    useChatStore.getState().setSelectedChatId(chatId);
+    navigate('/understand');
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
@@ -80,21 +104,34 @@ const Dashboard: React.FC = () => {
           <a href="#" className="flex items-center gap-3 text-white hover:text-indigo-400 transition">
             <HomeIcon /> Dashboard
           </a>
-          <a href="#" className="flex items-center gap-3 text-white hover:text-indigo-400 transition">
+          {/* <a href="#" className="flex items-center gap-3 text-white hover:text-indigo-400 transition">
             <User /> Profile
-          </a>
-          <a href="#" className="flex items-center gap-3 text-white hover:text-indigo-400 transition">
+          </a> */}
+          <Link to="/settings" className="flex items-center gap-3 text-white hover:text-indigo-400 transition">
             <Settings /> Settings
-          </a>
+          </Link>
           <button 
             onClick={handleLogout}
             className="flex items-center gap-3 text-white hover:text-red-400 transition w-full text-left"
           >
             <LogOut /> Logout
           </button>
-          <h1 className="text-white text-xl">
+          <h1 className="text-white text-xl mb-2">
             Chats
           </h1>
+          {chatError ? (
+            <div className="text-red-400 text-sm mt-2">some error occured while fetching chats, try again after some time</div>
+          ) : (
+            <div className="space-y-2 overflow-y-auto max-h-[400px]">
+              {chats.map((chat) => (
+                <div key={chat._id}
+                 className="bg-slate-700/60 rounded px-3 py-2 text-sm text-blue-200 cursor-pointer"
+                  onClick={() => handleChatClick(chat._id)}>
+                  {chat.initialPrompt}
+                </div>
+              ))}
+            </div>
+          )}
         </nav>
       </aside>
 
@@ -102,7 +139,7 @@ const Dashboard: React.FC = () => {
       <main className="flex-1 p-6 md:p-10">
         {/* Top navbar */}
         <div className="flex justify-between items-center mb-10">
-          <h2 className="text-2xl font-bold">Welcome back, Tony!</h2>
+          <h2 className="text-2xl font-bold">Welcome back, {user?.fullName}!</h2>
           <div className="text-sm text-gray-300">Last login: 2 hours ago</div>
         </div>
 

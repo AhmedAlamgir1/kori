@@ -90,9 +90,9 @@ export const InterviewQuestionProvider: React.FC<InterviewQuestionProviderProps>
       // Only decrease regenerations if not triggered by profile change
       if (!isProfileChange) {
         decrementRegenerations();
-        if (regenerationsLeft <= 1) {
-          toast.warning("This is your last regeneration!");
-        }
+        // if (regenerationsLeft <= 1) {
+        //   toast.warning("This is your last regeneration!");
+        // }
       }
     } catch (error) {
       setError("Failed to generate interview questions. Please try again.");

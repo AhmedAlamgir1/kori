@@ -64,16 +64,16 @@ const RespondentProfileGenerator: React.FC<RespondentProfileGeneratorProps> = ({
       };
       const generatedProfiles = await generateRespondentProfiles(
         opportunity, 
-        researchApproach, 
+        researchApproach,
         undefined,
         handleImageGenerated
       );
       
       setProfiles(generatedProfiles);
       decrementRegenerations();
-      if (regenerationsLeft <= 1) {
-        toast.warning("This is your last regeneration!");
-      }
+      // if (regenerationsLeft <= 1) {
+      //   toast.warning("This is your last regeneration!");
+      // }
     } catch (err) {
       setError("Failed to generate respondent profiles. Please try again.");
       console.error(err);

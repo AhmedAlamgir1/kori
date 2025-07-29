@@ -89,14 +89,9 @@ async function makeAuthenticatedRequest(
       statusCode: response.status
     }));
     
-    // Handle token expiration
-    if (response.status === 401) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    }
-    
-    throw new Error(errorData.message || `HTTP ${response.status}`);
+    //throw new Error(errorData.message || `HTTP ${response.status}`);
+    console.log(errorData, "errorDaaata");
+    return errorData;
   }
 
   return response.json();
@@ -305,21 +300,35 @@ export async function updateProfile(profileData: UpdateProfileRequest): Promise<
 /**
  * Change password
  */
-export async function changePassword(passwordData: ChangePasswordRequest): Promise<void> {
+export async function changePassword(passwordData: ChangePasswordRequest): Promise<any> {
   try {
-    await makeAuthenticatedRequest('/change-password', {
+    const res = await makeAuthenticatedRequest('/change-password', {
       method: 'PUT',
       body: JSON.stringify(passwordData),
     });
-
-    // Clear stored data since user needs to log in again
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
-    
-    toast.success('Password changed successfully. Please log in again.');
+    return res;
   } catch (error) {
     console.error('Change password error:', error);
-    toast.error(error instanceof Error ? error.message : 'Failed to change password');
+    throw error;
+  }
+}
+
+/**
+ * Delete account
+ */
+export async function deleteAccount(userId: string): Promise<any> {
+  try {
+    const accessToken = localStorage.getItem("accessToken");
+    const res = await makeAuthenticatedRequest('/profile', {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      method: 'DELETE'
+    });
+    return res;
+  } catch (error) {
+    console.error('Delete account error:', error);
     throw error;
   }
 }
@@ -401,6 +410,13 @@ export function getStoredUser(): User | null {
     }
   }
   return null;
+}
+/**
+ * Google OAuth login - Redirects to Google OAuth consent screen
+ */
+export function googleLogin(): void {
+  const backendUrl = import.meta.env.VITE_API_URL;
+  window.location.href = `${backendUrl}/api/auth/google`;
 }
 
 /**
