@@ -9,7 +9,7 @@ export default defineConfig({
     host: "localhost",
     proxy: {
       "/api": {
-        target: "https://kori-ui.vercel.app/",
+        target: "https://kori-ui.vercel.app/api",
         changeOrigin: true,
         secure: false,
       },
