@@ -28,13 +28,13 @@ function Dashboard() {
 
   const handleChatClick = (chatId: string) => {
     useChatStore.getState().setSelectedChatId(chatId);
-    navigate('/understand');
+    navigate('/prompts');
   };
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
-    navigate('/login');
+    navigate('/');
   };
 
   const optionCards = [
@@ -140,7 +140,7 @@ function Dashboard() {
         {/* Top navbar */}
         <div className="flex justify-between items-center mb-10">
           <h2 className="text-2xl font-bold">Welcome back, {user?.fullName}!</h2>
-          <div className="text-sm text-gray-300">Last login: 2 hours ago</div>
+          {/* <div className="text-sm text-gray-300">Last login: 2 hours ago</div> */}
         </div>
 
         <motion.div

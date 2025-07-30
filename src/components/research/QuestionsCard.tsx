@@ -120,7 +120,25 @@ const QuestionsCard: React.FC<QuestionsCardProps> = ({
         <div className="flex justify-between">
           
           <div className="profile-pic" style={{width: '20%'}}>
-            <img src={selectedProfile?.image} alt="persona pic" className="rounded-sm" />
+            {selectedProfile?.imageLoading ? (
+              <div className="rounded-sm bg-slate-700 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400"></div>
+              </div>
+            ) : selectedProfile?.image ? (
+              <img 
+                src={selectedProfile.image} 
+                alt="persona pic" 
+                className="rounded-sm object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = profilepic;
+                }}
+              />
+            ) : (
+              <div className="rounded-sm bg-slate-700 flex items-center justify-center">
+                <UserRound className="h-8 w-8 text-slate-400" />
+              </div>
+            )}
           </div>
 
           <div className="text-blue-200/80 space-y-4 text-base border-b border-slate-700 pb-4" style={{width: '79%'}}>

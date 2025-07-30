@@ -26,7 +26,7 @@ function AuthCallback() {
           
           // Fetch user data using the token
           try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
+            const response = await fetch("/api/auth/me", {
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
@@ -35,7 +35,7 @@ function AuthCallback() {
 
             if (response.ok) {
               const userData = await response.json();
-              localStorage.setItem("user", JSON.stringify(userData.data));
+              localStorage.setItem("user", JSON.stringify(userData.data.user));
               toast.success("Successfully logged in with Google!");
               navigate("/dashboard");
             } else {

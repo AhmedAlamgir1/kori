@@ -19,7 +19,7 @@ const Settings = () => {
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("user");
-    navigate("/login");
+    navigate("/");
   };
   const handleDeleteAccount = async () => {
     const isConfirmed = window.confirm(

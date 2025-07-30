@@ -88,7 +88,7 @@ const Understand = () => {
 
   const navigateToHome = useCallback(() => {
     triggerActionWithConfirmation(() => {
-      navigate("/");
+      navigate("/dashboard");
     });
   }, [navigate, triggerActionWithConfirmation]);
 

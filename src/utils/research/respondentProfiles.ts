@@ -18,15 +18,12 @@ export interface Profile {
   occupation: string;
   background: string;
   perspective: string;
-  image?: string;
+  imageUrl?: string;
   imageLoading?: boolean;
 }
 
-// Function to generate images for profiles concurrently
-async function generateImagesForProfiles(
-  profiles: Profile[],
-  onImageGenerated: (index: number, imageUrl: string) => void
-) {
+// Function to generate images for profiles concurrently and create prompts after each image
+async function generateImagesForProfiles(profiles: Profile[], onImageGenerated: (index: number, imageUrl: string) => void, chatId: string) {
   const imagePromises = profiles.map(async (profile, index) => {
     try {
       const imageUrl = await generateProfileImage(
@@ -35,6 +32,9 @@ async function generateImagesForProfiles(
       );
       if (imageUrl) {
         onImageGenerated(index, imageUrl);
+        await createPromptForProfile(profile, chatId,imageUrl).catch(e => {
+          console.error('Prompt creation failed for profile', profile.name, e);
+        });
       }
       return { index, success: true, imageUrl };
     } catch (error) {
@@ -46,11 +46,11 @@ async function generateImagesForProfiles(
 }
 
 // Create a prompt for a given profile and chat
-export async function createPromptForProfile(profile: Profile, chatId: string) {
+export async function createPromptForProfile(profile: Profile, chatId: string,imageUrl:string ) {
   const promptPayload = {
-    imageUrl: profile.image,
     background: profile.background,
     uniquePerspective: profile.perspective,
+    imageUrl: imageUrl,
     profile: {
       name: profile.name,
       age: profile.age,
@@ -361,18 +361,8 @@ export async function generateRespondentProfiles(
     if (!chatId && accessToken) {
       throw new Error("No chatId found in global store.");
     }
-
-    // Save prompts in DB for each profile before image generation
-    await Promise.allSettled(
-      profilesWithLoadingState.map((profile) =>
-        createPromptForProfile(profile, chatId).catch((e) => {
-          console.error("Prompt creation failed for profile", profile.name, e);
-        })
-      )
-    );
-
     if (onImageGenerated) {
-      generateImagesForProfiles(profilesWithLoadingState, onImageGenerated);
+      generateImagesForProfiles(profilesWithLoadingState, onImageGenerated, chatId);
     }
 
     return profilesWithLoadingState;

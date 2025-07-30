@@ -25,7 +25,7 @@ const createRateLimiter = (
 // Stricter rate limiting for authentication routes
 const authRateLimiter = createRateLimiter(
   15 * 60 * 1000, // 15 minutes
-  5, // 5 attempts per window
+  25, // 25 attempts per window
   "Too many authentication attempts from this IP, please try again later"
 );
 
