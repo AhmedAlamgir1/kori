@@ -8,6 +8,7 @@ import { UserRound } from "lucide-react";
 import { RespondentProfile, ValidationFeedback } from "./types";
 import ValidationFeedbackDisplay from "./ValidationFeedback";
 import useProfileStore from "@/stores/useProfileStore";
+import { generateProfileImage } from "@/utils/api/replicateApi";
 
 interface RespondentProfileFormProps {
   opportunity: string;
@@ -55,20 +56,44 @@ const RespondentProfileForm: React.FC<RespondentProfileFormProps> = ({
       setValidationFeedback(feedback);
       
       if (feedback?.isValid) {
-        // Add the custom profile to the Zustand store
         const addProfile = useProfileStore.getState().addProfile;
+        const updateProfile = useProfileStore.getState().updateProfile;
         
-        // Add the new custom profile with isCustom flag
+        // Add the new custom profile with isCustom flag and loading state
         const profileWithFlag = {
           ...customProfile,
-          isCustom: true // Add a flag to identify custom profiles
+          isCustom: true,
+          imageLoading: true 
         };
         
         // Add to the Zustand store
         addProfile(profileWithFlag);
+        const profiles = useProfileStore.getState().profiles;
+        const newProfileIndex = profiles.length - 1;
         
         // Notify parent component
         onProfileAdded(customProfile);
+        
+        // Generate image for the profile
+        try {
+          const imageUrl = await generateProfileImage(customProfile.background, customProfile.name);
+          
+          if (imageUrl) { 
+            updateProfile(newProfileIndex, {
+              image: imageUrl,
+              imageLoading: false
+            });
+          } else {
+            updateProfile(newProfileIndex, {
+              imageLoading: false
+            });
+          }
+        } catch (error) {
+          console.error('Error generating profile image:', error);
+          updateProfile(newProfileIndex, {
+            imageLoading: false
+          });
+        }
         
         // Reset form after successful submission
         setCustomProfile({

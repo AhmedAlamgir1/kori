@@ -14,9 +14,11 @@ import MobileBlocker from "./components/MobileBlocker";
 import { useIsMobile } from "./hooks/useIsMobile";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import Dashboard from "./pages/dashboard";
+import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import AuthCallback from "./pages/AuthCallback";
+import SavedPrompts from "./pages/SavedPrompts";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -55,12 +57,34 @@ const App = () => {
               <Route path="/" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
-              <Route path="/Dashboard" element={<Dashboard />} />
+              <Route 
+                path="/Dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
               <Route path="/lead" element={<ComingSoon />} />
               <Route path="/briefs" element={<ComingSoon />} />
               <Route path="/design" element={<ComingSoon />} />
               <Route path="/coming-soon" element={<ComingSoon />} />
-              <Route path="/settings" element={<Settings />} />
+              <Route 
+                path="/settings" 
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/prompts" 
+                element={
+                  <ProtectedRoute>
+                    <SavedPrompts />
+                  </ProtectedRoute>
+                } 
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

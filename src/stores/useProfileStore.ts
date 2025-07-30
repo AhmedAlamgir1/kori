@@ -9,6 +9,7 @@ interface ProfileState {
   regenerationsLeft: number;
   setProfiles: (profiles: RespondentProfile[] | ((prev: RespondentProfile[]) => RespondentProfile[])) => void;
   addProfile: (profile: RespondentProfile) => void;
+  updateProfile: (index: number, updates: Partial<RespondentProfile>) => void;
   selectProfile: (index: number | null) => void;
   decrementRegenerations: () => void;
   resetRegenerations: () => void;
@@ -73,6 +74,25 @@ const useProfileStore = create<ProfileState>()(
       addProfile: (profile) => set((state) => ({
         profiles: [...state.profiles, profile]
       })),
+      
+      updateProfile: (index, updates) => set((state) => {
+        if (index >= 0 && index < state.profiles.length) {
+          const updatedProfiles = [...state.profiles];
+          updatedProfiles[index] = { ...updatedProfiles[index], ...updates };
+          
+          // Update selected profile if it's the one being updated
+          let newSelectedProfile = state.selectedProfile;
+          if (state.selectedProfileIndex === index) {
+            newSelectedProfile = updatedProfiles[index];
+          }
+          
+          return {
+            profiles: updatedProfiles,
+            selectedProfile: newSelectedProfile
+          };
+        }
+        return state;
+      }),
       
       selectProfile: (index) => set((state) => {
         if (index === null) {
