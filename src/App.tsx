@@ -49,10 +49,10 @@ const App = () => {
         ) : (
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Landing />} />
+              <Route path="/landing" element={<Landing />} />
               <Route path="/innovate" element={<Index />} />
               <Route path="/understand" element={<Understand />} />
-              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/Dashboard" element={<Dashboard />} />

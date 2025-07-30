@@ -123,6 +123,7 @@ const LandingPage = () => {
                 </p>
               </div>
             </motion.div>
+            
           ))}
         </motion.div>
       </main>

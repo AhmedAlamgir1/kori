@@ -47,11 +47,13 @@ function Login() {
       setIsLoading(false);
     }
   };
+
   const handleOAuth = () => {
     setIsLoading(true);
     setError(null);
     googleLogin();
   }
+
   return (
     <>
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-slate-900 to-indigo-900 text-white">
@@ -127,8 +129,9 @@ function Login() {
             <GoogleIcon className="w-5 h-5" />
             Login With Google
           </button>
+
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/landing")}
             type="submit"
             className="w-full py-2 text-white bg-gray-500 rounded-lg hover:bg-blue-700 focus:outline-none"
           >
