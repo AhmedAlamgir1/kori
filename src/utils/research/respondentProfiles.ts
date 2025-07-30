@@ -2,8 +2,8 @@ import { toast } from "sonner";
 import { callChatGPTProxy } from "../api/geminiApi";
 import { generateProfileImage } from "../api/replicateApi";
 import { log } from "console";
-import { useChatStore } from '@/stores/useChatStore';
-import { createPromptForChat } from '@/utils/api/chatApi';
+import { useChatStore } from "@/stores/useChatStore";
+import { createPromptForChat } from "@/utils/api/chatApi";
 
 interface GenerationOptions {
   desiredAgeRange?: "teen" | "young adult" | "middle-aged" | "older";
@@ -23,10 +23,16 @@ export interface Profile {
 }
 
 // Function to generate images for profiles concurrently
-async function generateImagesForProfiles(profiles: Profile[], onImageGenerated: (index: number, imageUrl: string) => void) {
+async function generateImagesForProfiles(
+  profiles: Profile[],
+  onImageGenerated: (index: number, imageUrl: string) => void
+) {
   const imagePromises = profiles.map(async (profile, index) => {
     try {
-      const imageUrl = await generateProfileImage(profile.background, profile.name);
+      const imageUrl = await generateProfileImage(
+        profile.background,
+        profile.name
+      );
       if (imageUrl) {
         onImageGenerated(index, imageUrl);
       }
@@ -53,10 +59,10 @@ export async function createPromptForProfile(profile: Profile, chatId: string) {
   };
   try {
     const data = await createPromptForChat(chatId, promptPayload);
-    toast.success('Prompt created successfully!');
+    toast.success("Prompt created successfully!");
     return data;
   } catch (error: any) {
-    toast.error(error.message || 'Failed to create prompt');
+    toast.error(error.message || "Failed to create prompt");
     throw error;
   }
 }
@@ -71,76 +77,160 @@ export async function generateRespondentProfiles(
   try {
     const randomSeed = Math.random().toString(36).substring(2, 10);
     const timestamp = Date.now();
-    
+
     let randomAgeRange = Math.floor(Math.random() * 3);
     if (options?.desiredAgeRange) {
       switch (options.desiredAgeRange) {
-        case "teen": randomAgeRange = 0; break;
-        case "young adult": randomAgeRange = 1; break;
-        case "middle-aged": randomAgeRange = 2; break;
-        case "older": randomAgeRange = 3; break;
+        case "teen":
+          randomAgeRange = 0;
+          break;
+        case "young adult":
+          randomAgeRange = 1;
+          break;
+        case "middle-aged":
+          randomAgeRange = 2;
+          break;
+        case "older":
+          randomAgeRange = 3;
+          break;
       }
     }
 
-    const culturalRegions = options?.preferredCulturalRegions?.[0] || 
-                          ['East Asian', 'South Asian', 'Middle Eastern', 'African', 'European', 'Latin American', 'Pacific Islander'][Math.floor(Math.random() * 7)];
-    
+    const culturalRegions =
+      options?.preferredCulturalRegions?.[0] ||
+      [
+        "East Asian",
+        "South Asian",
+        "Middle Eastern",
+        "African",
+        "European",
+        "Latin American",
+        "Pacific Islander",
+      ][Math.floor(Math.random() * 7)];
+
     const defaultCareerFocus = [
       // Business & Professional
-      'Business Owner', 'Project Manager', 'Marketing Director', 'Operations Manager', 'Financial Advisor',
+      "Business Owner",
+      "Project Manager",
+      "Marketing Director",
+      "Operations Manager",
+      "Financial Advisor",
       // Technology & Digital
-      'Software Engineer', 'UX Designer', 'Product Manager', 'Digital Strategist', 'IT Consultant',
+      "Software Engineer",
+      "UX Designer",
+      "Product Manager",
+      "Digital Strategist",
+      "IT Consultant",
       // Healthcare & Wellness
-      'Healthcare Administrator', 'Wellness Coach', 'Medical Professional', 'Mental Health Counselor', 'Fitness Trainer',
+      "Healthcare Administrator",
+      "Wellness Coach",
+      "Medical Professional",
+      "Mental Health Counselor",
+      "Fitness Trainer",
       // Creative & Media
-      'Creative Director', 'Content Creator', 'Media Producer', 'Communications Manager', 'Design Lead',
+      "Creative Director",
+      "Content Creator",
+      "Media Producer",
+      "Communications Manager",
+      "Design Lead",
       // Community & Social Impact
-      'Community Director', 'Program Manager', 'Social Worker', 'Outreach Coordinator', 'NGO Director',
+      "Community Director",
+      "Program Manager",
+      "Social Worker",
+      "Outreach Coordinator",
+      "NGO Director",
       // Research & Development
-      'Research Director', 'Innovation Lead', 'Strategy Consultant', 'Development Manager', 'Analytics Lead',
+      "Research Director",
+      "Innovation Lead",
+      "Strategy Consultant",
+      "Development Manager",
+      "Analytics Lead",
       // Service & Support
-      'Customer Success Manager', 'Service Director', 'Support Team Lead', 'Experience Manager', 'Operations Director',
+      "Customer Success Manager",
+      "Service Director",
+      "Support Team Lead",
+      "Experience Manager",
+      "Operations Director",
       // Leadership & Management
-      'Executive Director', 'Department Head', 'Team Leader', 'Regional Manager', 'Program Director'
+      "Executive Director",
+      "Department Head",
+      "Team Leader",
+      "Regional Manager",
+      "Program Director",
     ];
-    
+
     const getRelevantCareers = (opportunity: string) => {
       const opportunityLower = opportunity.toLowerCase();
-      
+
       // If opportunity mentions school/education/students, prioritize those roles
-      if (opportunityLower.includes('school') || 
-          opportunityLower.includes('student') || 
-          opportunityLower.includes('education') ||
-          opportunityLower.includes('club') ||
-          opportunityLower.includes('class')) {
+      if (
+        opportunityLower.includes("school") ||
+        opportunityLower.includes("student") ||
+        opportunityLower.includes("education") ||
+        opportunityLower.includes("club") ||
+        opportunityLower.includes("class")
+      ) {
         return defaultCareerFocus;
       }
-      
+
       // For other opportunities, use the general career list
       return [
         // Business & Professional
-        'Business Owner', 'Project Manager', 'Marketing Director', 'Operations Manager', 'Financial Advisor',
+        "Business Owner",
+        "Project Manager",
+        "Marketing Director",
+        "Operations Manager",
+        "Financial Advisor",
         // Technology & Digital
-        'Software Engineer', 'UX Designer', 'Product Manager', 'Digital Strategist', 'IT Consultant',
+        "Software Engineer",
+        "UX Designer",
+        "Product Manager",
+        "Digital Strategist",
+        "IT Consultant",
         // Healthcare & Wellness
-        'Healthcare Administrator', 'Wellness Coach', 'Medical Professional', 'Mental Health Counselor', 'Fitness Trainer',
+        "Healthcare Administrator",
+        "Wellness Coach",
+        "Medical Professional",
+        "Mental Health Counselor",
+        "Fitness Trainer",
         // Creative & Media
-        'Creative Director', 'Content Creator', 'Media Producer', 'Communications Manager', 'Design Lead',
+        "Creative Director",
+        "Content Creator",
+        "Media Producer",
+        "Communications Manager",
+        "Design Lead",
         // Community & Social Impact
-        'Community Director', 'Program Manager', 'Social Worker', 'Outreach Coordinator', 'NGO Director',
+        "Community Director",
+        "Program Manager",
+        "Social Worker",
+        "Outreach Coordinator",
+        "NGO Director",
         // Research & Development
-        'Research Director', 'Innovation Lead', 'Strategy Consultant', 'Development Manager', 'Analytics Lead',
+        "Research Director",
+        "Innovation Lead",
+        "Strategy Consultant",
+        "Development Manager",
+        "Analytics Lead",
         // Service & Support
-        'Customer Success Manager', 'Service Director', 'Support Team Lead', 'Experience Manager', 'Operations Director',
+        "Customer Success Manager",
+        "Service Director",
+        "Support Team Lead",
+        "Experience Manager",
+        "Operations Director",
         // Leadership & Management
-        'Executive Director', 'Department Head', 'Team Leader', 'Regional Manager', 'Program Director'
+        "Executive Director",
+        "Department Head",
+        "Team Leader",
+        "Regional Manager",
+        "Program Director",
       ];
     };
 
-    const careerFocus = options?.occupationRoles?.[0] ||
-                       options?.occupationInterests?.[0] ||
-                       defaultCareerFocus[Math.floor(Math.random() * defaultCareerFocus.length)];
-    
+    const careerFocus =
+      options?.occupationRoles?.[0] ||
+      options?.occupationInterests?.[0] ||
+      defaultCareerFocus[Math.floor(Math.random() * defaultCareerFocus.length)];
+
     const prompt = `
       Act as a user research expert helping students with innovation projects.
       
@@ -223,23 +313,23 @@ export async function generateRespondentProfiles(
     `;
 
     const responseText = await callChatGPTProxy(prompt);
-    
+
     const jsonMatch = responseText.match(/(\[[\s\S]*\])/);
     if (!jsonMatch) {
       throw new Error("Could not extract JSON from response");
     }
-    
+
     const profiles = JSON.parse(jsonMatch[0]);
-    
+
     if (!Array.isArray(profiles) || profiles.length === 0) {
       throw new Error("Invalid response: Expected an array of profiles");
     }
-    
+
     const validateDiversity = (profiles: any[]) => {
       const names = new Set();
       const ages = new Set();
       const occupations = new Set();
-      
+
       for (const profile of profiles) {
         if (names.has(profile.name)) {
           throw new Error("Duplicate name detected");
@@ -250,40 +340,41 @@ export async function generateRespondentProfiles(
         if (occupations.has(profile.occupation)) {
           throw new Error("Duplicate occupation detected");
         }
-        
+
         names.add(profile.name);
         ages.add(profile.age);
         occupations.add(profile.occupation);
       }
     };
-    
+
     validateDiversity(profiles);
 
     // Add imageLoading state to all profiles
-    const profilesWithLoadingState = profiles.map(profile => ({
+    const profilesWithLoadingState = profiles.map((profile) => ({
       ...profile,
-      imageLoading: true
+      imageLoading: true,
     }));
 
     // Get chatId from Zustand store
     const chatId = useChatStore.getState().chatId;
-    if (!chatId) {
-      throw new Error('No chatId found in global store.');
+    const accessToken = localStorage.getItem("accessToken");
+    if (!chatId && accessToken) {
+      throw new Error("No chatId found in global store.");
     }
 
     // Save prompts in DB for each profile before image generation
     await Promise.allSettled(
-      profilesWithLoadingState.map(profile =>
-        createPromptForProfile(profile, chatId).catch(e => {
-          console.error('Prompt creation failed for profile', profile.name, e);
+      profilesWithLoadingState.map((profile) =>
+        createPromptForProfile(profile, chatId).catch((e) => {
+          console.error("Prompt creation failed for profile", profile.name, e);
         })
       )
     );
-   
+
     if (onImageGenerated) {
       generateImagesForProfiles(profilesWithLoadingState, onImageGenerated);
     }
-   
+
     return profilesWithLoadingState;
   } catch (error) {
     console.error("Error generating respondent profiles:", error);

@@ -44,3 +44,6 @@ coverage/
 # Production
 .cache/
 .temp/
+
+
+.env
