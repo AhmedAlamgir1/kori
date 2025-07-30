@@ -6,11 +6,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2, AlertCircle, Search, Microscope } from "lucide-react";
 import { toast } from "sonner";
 import { validateTopicLegitimacy } from "@/utils/research/topicValidator";
+import { useChatStore } from '@/stores/useChatStore';
 
 interface ResearchBriefValidatorProps {
   opportunity: string;
   setOpportunity: (value: string) => void;
-  onValidationSuccess: (approach: "explorative" | "evaluative") => void;
+  onValidationSuccess: (approach: "explorative" | "evaluative", chatId: string) => void;
 }
 
 const ResearchBriefValidator: React.FC<ResearchBriefValidatorProps> = ({
@@ -29,6 +30,7 @@ const ResearchBriefValidator: React.FC<ResearchBriefValidatorProps> = ({
     try {
       // Basic validation checks
       // Count words by splitting on whitespace and filtering out empty strings
+      const accessToken = localStorage.getItem("accessToken");
       const words = opportunity.trim().split(/\s+/).filter(word => word.length > 0);
       const wordCount = words.length;
 
@@ -77,7 +79,47 @@ const ResearchBriefValidator: React.FC<ResearchBriefValidatorProps> = ({
       localStorage.setItem('researchApproach', researchApproach);
       
       setValidationError(null);
-      onValidationSuccess(researchApproach);
+      if (accessToken) {
+        try {
+          const chatPayload = {
+            initialPrompt: opportunity,
+            category: researchApproach
+          };
+
+          const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify(chatPayload)
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.message || 'Failed to create chat');
+          }
+
+          // Extract chatId from the response
+          const chatId = data.data?.chat?._id;
+          if (!chatId) {
+            throw new Error('Chat ID not returned from backend');
+          }
+          useChatStore.getState().setChatId(chatId);
+
+          toast.success("Chat created successfully!");
+
+          onValidationSuccess(researchApproach, chatId);
+          return;
+        } catch (apiError: any) {
+          setValidationError(apiError.message || "Failed to create chat. Please try again.");
+          toast.error(apiError.message || "Failed to create chat. Please try again.");
+          setIsValidating(false);
+          return;
+        }
+      }
+      onValidationSuccess(researchApproach, "");
     } catch (error) {
       console.error("Error validating opportunity:", error);
       setValidationError("An error occurred during validation. Please try again.");

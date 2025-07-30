@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { login } from "../utils/api/authApi";
-
+import { login, googleLogin } from "../utils/api/authApi";
+import { GoogleIcon } from "@/components/ui/google-icon";
 interface LoginFormState {
   email: string;
   password: string;
@@ -47,6 +47,12 @@ function Login() {
       setIsLoading(false);
     }
   };
+
+  const handleOAuth = () => {
+    setIsLoading(true);
+    setError(null);
+    googleLogin();
+  }
 
   return (
     <>
@@ -115,6 +121,14 @@ function Login() {
           </form>
 
           <div className="text-center mt-4 mb-4">OR</div>
+          <button
+            onClick={handleOAuth}
+            type="submit"
+            className="w-full py-2 text-black bg-white rounded-lg hover:bg-blue-700 focus:outline-none cursor-pointer mb-4 flex items-center justify-center gap-3"
+          >
+            <GoogleIcon className="w-5 h-5" />
+            Login With Google
+          </button>
 
           <button
             onClick={() => navigate("/landing")}
