@@ -24,18 +24,6 @@ class ChatService {
       throw ApiError.notFound("User not found");
     }
 
-    // Check if user already has an active chat session
-    const existingChat = await Chat.findOne({
-      userId: new mongoose.Types.ObjectId(userId),
-      status: "active",
-    });
-
-    if (existingChat) {
-      // Archive the existing chat to maintain only one active session
-      existingChat.status = "archived";
-      await existingChat.save();
-    }
-
     const chat = new Chat({
       userId: new mongoose.Types.ObjectId(userId),
       initialPrompt,
