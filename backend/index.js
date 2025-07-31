@@ -137,7 +137,7 @@ app.use(
       "http://127.0.0.1:3000",
       "http://127.0.0.1:5173",
       "https://kori-ui.vercel.app",
-      "http://51.20.127.51:3000",
+      "http://51.20.127.51:4173",
     ], // Allow specific origins
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
