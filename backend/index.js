@@ -131,7 +131,12 @@ app.use(requestLogger); // Request logging
 // CORS configuration to allow all origins
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"], // Allow specific origins
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "http://127.0.0.1:3000",
+      "http://127.0.0.1:5173",
+    ], // Allow specific origins
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     credentials: true, // Set to true when using credentials: 'include'
@@ -239,6 +244,6 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Start the server
-app.listen(port, () => {
+app.listen(port, "0.0.0.0", () => {
   console.log(`OpenAI Proxy server running on port ${port}`);
 });
