@@ -54,6 +54,7 @@ const promptSchema = new mongoose.Schema(
       trim: true,
       maxlength: [500, "Unique perspective cannot exceed 500 characters"],
     },
+    questions: [questionSchema], // Array of predefined questions moved from chatSchema
     isActive: {
       type: Boolean,
       default: true,
@@ -98,7 +99,6 @@ const chatSchema = new mongoose.Schema(
       index: true,
     },
     prompts: [promptSchema], // Array of AI character prompts
-    questions: [questionSchema], // Array of predefined questions
     initialPrompt: {
       type: String,
       required: false, // Made optional
@@ -263,28 +263,45 @@ chatSchema.methods.addPrompt = function (promptData) {
   return this.prompts[this.prompts.length - 1];
 };
 
-// Instance method to add a question
-chatSchema.methods.addQuestion = function (questionData) {
-  this.questions.push(questionData);
-  return this.questions[this.questions.length - 1];
+// Instance method to add a question to a prompt
+chatSchema.methods.addQuestion = function (promptId, questionData) {
+  const prompt = this.prompts.id(promptId);
+  if (!prompt) return null;
+
+  if (!prompt.questions) {
+    prompt.questions = [];
+  }
+
+  prompt.questions.push(questionData);
+  return prompt.questions[prompt.questions.length - 1];
 };
 
-// Instance method to remove a question by ID
-chatSchema.methods.removeQuestion = function (questionId) {
-  const questionIndex = this.questions.findIndex(
+// Instance method to remove a question from a prompt by ID
+chatSchema.methods.removeQuestion = function (promptId, questionId) {
+  const prompt = this.prompts.id(promptId);
+  if (!prompt || !prompt.questions) return null;
+
+  const questionIndex = prompt.questions.findIndex(
     (q) => q._id.toString() === questionId.toString()
   );
   if (questionIndex > -1) {
-    const removedQuestion = this.questions[questionIndex];
-    this.questions.splice(questionIndex, 1);
+    const removedQuestion = prompt.questions[questionIndex];
+    prompt.questions.splice(questionIndex, 1);
     return removedQuestion;
   }
   return null;
 };
 
-// Instance method to update a question by ID
-chatSchema.methods.updateQuestion = function (questionId, updateData) {
-  const question = this.questions.id(questionId);
+// Instance method to update a question in a prompt by ID
+chatSchema.methods.updateQuestion = function (
+  promptId,
+  questionId,
+  updateData
+) {
+  const prompt = this.prompts.id(promptId);
+  if (!prompt || !prompt.questions) return null;
+
+  const question = prompt.questions.id(questionId);
   if (question) {
     Object.keys(updateData).forEach((key) => {
       if (key !== "_id") {
@@ -296,9 +313,12 @@ chatSchema.methods.updateQuestion = function (questionId, updateData) {
   return null;
 };
 
-// Instance method to get questions by category
-chatSchema.methods.getQuestionsByCategory = function (category) {
-  return this.questions.filter((question) => question.category === category);
+// Instance method to get questions by category from a prompt
+chatSchema.methods.getQuestionsByCategory = function (promptId, category) {
+  const prompt = this.prompts.id(promptId);
+  if (!prompt || !prompt.questions) return [];
+
+  return prompt.questions.filter((question) => question.category === category);
 };
 
 // Instance method to deactivate a prompt

@@ -246,10 +246,13 @@ router.get(
   ChatController.exportChat
 );
 
-// Question management routes
+// Question management routes for prompts
 router.post(
-  "/:chatId/questions",
+  "/:chatId/prompts/:promptId/questions",
   getChatValidation,
+  param("promptId")
+    .isMongoId()
+    .withMessage("Prompt ID must be a valid MongoDB ObjectId"),
   addQuestionValidation,
   handleValidationErrors,
   authenticate,
@@ -257,8 +260,11 @@ router.post(
 );
 
 router.get(
-  "/:chatId/questions",
+  "/:chatId/prompts/:promptId/questions",
   getChatValidation,
+  param("promptId")
+    .isMongoId()
+    .withMessage("Prompt ID must be a valid MongoDB ObjectId"),
   query("category")
     .optional()
     .trim()
@@ -270,8 +276,11 @@ router.get(
 );
 
 router.patch(
-  "/:chatId/questions/:questionId",
+  "/:chatId/prompts/:promptId/questions/:questionId",
   getChatValidation,
+  param("promptId")
+    .isMongoId()
+    .withMessage("Prompt ID must be a valid MongoDB ObjectId"),
   getQuestionValidation,
   addQuestionValidation,
   handleValidationErrors,
@@ -280,8 +289,11 @@ router.patch(
 );
 
 router.delete(
-  "/:chatId/questions/:questionId",
+  "/:chatId/prompts/:promptId/questions/:questionId",
   getChatValidation,
+  param("promptId")
+    .isMongoId()
+    .withMessage("Prompt ID must be a valid MongoDB ObjectId"),
   getQuestionValidation,
   handleValidationErrors,
   authenticate,

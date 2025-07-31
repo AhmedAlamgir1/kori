@@ -3,9 +3,9 @@
     "name": "Kori Backend API Collection",
     "description": "Complete Postman collection for testing all Kori backend API endpoints including authentication, chat management, message handling, image generation, AI integration, session management, Google OAuth, and more. Updated with all current routes and proper parameters including newly implemented features.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_postman_id": "kori-backend-api-complete-v6",
+    "_postman_id": "kori-backend-api-complete-v7",
     "version": {
-      "major": 6,
+      "major": 7,
       "minor": 0,
       "patch": 0
     }
@@ -58,11 +58,6 @@
     },
     {
       "key": "imageId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "questionId",
       "value": "",
       "type": "string"
     }
@@ -552,6 +547,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
               }
             ],
             "body": {
@@ -699,6 +699,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
               }
             ],
             "body": {
@@ -853,6 +858,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
               }
             ],
             "body": {
@@ -927,6 +937,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
               }
             ],
             "body": {
@@ -1246,6 +1261,12 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text",
+                "description": "Optional - include for authenticated requests"
               }
             ],
             "body": {
@@ -1371,6 +1392,122 @@
               "raw": "{{baseUrl}}/api/gemini",
               "host": ["{{baseUrl}}"],
               "path": ["api", "gemini"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔌 Prompt-Based Question Management",
+      "item": [
+        {
+          "name": "Add Question to Prompt",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('questionId', response.data.question._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization", 
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"exploratory\",\n  \"question\": \"What is your biggest challenge when using this product?\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/prompts/{{promptId}}/questions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "{{chatId}}", "prompts", "{{promptId}}", "questions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Prompt Questions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/prompts/{{promptId}}/questions?category=exploratory",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "{{chatId}}", "prompts", "{{promptId}}", "questions"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "exploratory"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Prompt Question",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"evaluative\",\n  \"question\": \"How would you rate your overall experience with this feature?\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/prompts/{{promptId}}/questions/{{questionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "{{chatId}}", "prompts", "{{promptId}}", "questions", "{{questionId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Prompt Question",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}/prompts/{{promptId}}/questions/{{questionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "{{chatId}}", "prompts", "{{promptId}}", "questions", "{{questionId}}"]
             }
           },
           "response": []

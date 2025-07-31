@@ -983,12 +983,16 @@ class ChatService {
     return true;
   }
 
-  // Add a question to a chat
+  // Add a question to a prompt
   static async addQuestion(data) {
-    const { chatId, userId, questionData } = data;
+    const { chatId, userId, promptId, questionData } = data;
 
     if (!mongoose.Types.ObjectId.isValid(chatId)) {
       throw ApiError.badRequest("Invalid chat ID");
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(promptId)) {
+      throw ApiError.badRequest("Invalid prompt ID");
     }
 
     const chat = await this.getChatById({
@@ -997,18 +1001,27 @@ class ChatService {
       includeMessages: false,
     });
 
-    const question = chat.addQuestion(questionData);
+    const question = chat.addQuestion(promptId, questionData);
+
+    if (!question) {
+      throw ApiError.notFound("Prompt not found");
+    }
+
     await chat.save();
 
     return question;
   }
 
-  // Get questions for a chat
+  // Get questions for a prompt
   static async getQuestions(data) {
-    const { chatId, userId, category } = data;
+    const { chatId, userId, promptId, category } = data;
 
     if (!mongoose.Types.ObjectId.isValid(chatId)) {
       throw ApiError.badRequest("Invalid chat ID");
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(promptId)) {
+      throw ApiError.badRequest("Invalid prompt ID");
     }
 
     const chat = await this.getChatById({
@@ -1017,29 +1030,36 @@ class ChatService {
       includeMessages: false,
     });
 
-    let questions = chat.questions;
+    const prompt = chat.prompts.id(promptId);
+    if (!prompt) {
+      throw ApiError.notFound("Prompt not found");
+    }
+
+    let questions = prompt.questions || [];
 
     // Filter by category if provided
     if (category) {
-      questions = chat.getQuestionsByCategory(category);
+      questions = chat.getQuestionsByCategory(promptId, category);
     }
 
     return {
       questions,
       total: questions.length,
       chatId: chat._id,
+      promptId: promptId,
     };
   }
 
   // Update a question
   static async updateQuestion(data) {
-    const { chatId, questionId, userId, updateData } = data;
+    const { chatId, promptId, questionId, userId, updateData } = data;
 
     if (
       !mongoose.Types.ObjectId.isValid(chatId) ||
+      !mongoose.Types.ObjectId.isValid(promptId) ||
       !mongoose.Types.ObjectId.isValid(questionId)
     ) {
-      throw ApiError.badRequest("Invalid chat ID or question ID");
+      throw ApiError.badRequest("Invalid chat ID, prompt ID, or question ID");
     }
 
     const chat = await this.getChatById({
@@ -1048,10 +1068,10 @@ class ChatService {
       includeMessages: false,
     });
 
-    const question = chat.updateQuestion(questionId, updateData);
+    const question = chat.updateQuestion(promptId, questionId, updateData);
 
     if (!question) {
-      throw ApiError.notFound("Question not found");
+      throw ApiError.notFound("Question or prompt not found");
     }
 
     await chat.save();
@@ -1061,13 +1081,14 @@ class ChatService {
 
   // Delete a question
   static async deleteQuestion(data) {
-    const { chatId, questionId, userId } = data;
+    const { chatId, promptId, questionId, userId } = data;
 
     if (
       !mongoose.Types.ObjectId.isValid(chatId) ||
+      !mongoose.Types.ObjectId.isValid(promptId) ||
       !mongoose.Types.ObjectId.isValid(questionId)
     ) {
-      throw ApiError.badRequest("Invalid chat ID or question ID");
+      throw ApiError.badRequest("Invalid chat ID, prompt ID, or question ID");
     }
 
     const chat = await this.getChatById({
@@ -1076,10 +1097,10 @@ class ChatService {
       includeMessages: false,
     });
 
-    const question = chat.removeQuestion(questionId);
+    const question = chat.removeQuestion(promptId, questionId);
 
     if (!question) {
-      throw ApiError.notFound("Question not found");
+      throw ApiError.notFound("Question or prompt not found");
     }
 
     await chat.save();

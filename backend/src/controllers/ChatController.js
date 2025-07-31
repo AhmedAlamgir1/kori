@@ -493,9 +493,13 @@ class ChatController {
   // Add a prompt to a chat
   static async addPrompt(req, res, next) {
     try {
-      const { chatId } = req.params;
+      const { chatId, questions } = req.params;
 
-      const promptData = { ...req.body, userId: req.userId };
+      const promptData = {
+        ...req.body,
+        userId: req.userId,
+        questions: questions,
+      };
       const userId = req.user ? req.user._id : null;
       if (!userId) {
         return next(
@@ -645,16 +649,17 @@ class ChatController {
     }
   }
 
-  // Add a question to a chat
+  // Add a question to a prompt
   static async addQuestion(req, res, next) {
     try {
       const userId = req.user._id;
-      const { chatId } = req.params;
+      const { chatId, promptId } = req.params;
       const { category, question } = req.body;
 
       const result = await ChatService.addQuestion({
         chatId,
         userId,
+        promptId,
         questionData: { category, question },
       });
 
@@ -668,16 +673,17 @@ class ChatController {
     }
   }
 
-  // Get questions for a chat
+  // Get questions for a prompt
   static async getQuestions(req, res, next) {
     try {
       const userId = req.user._id;
-      const { chatId } = req.params;
+      const { chatId, promptId } = req.params;
       const { category } = req.query;
 
       const result = await ChatService.getQuestions({
         chatId,
         userId,
+        promptId,
         category,
       });
 
@@ -696,11 +702,12 @@ class ChatController {
   static async updateQuestion(req, res, next) {
     try {
       const userId = req.user._id;
-      const { chatId, questionId } = req.params;
+      const { chatId, promptId, questionId } = req.params;
       const updateData = req.body;
 
       const result = await ChatService.updateQuestion({
         chatId,
+        promptId,
         questionId,
         userId,
         updateData,
@@ -720,10 +727,11 @@ class ChatController {
   static async deleteQuestion(req, res, next) {
     try {
       const userId = req.user._id;
-      const { chatId, questionId } = req.params;
+      const { chatId, promptId, questionId } = req.params;
 
       await ChatService.deleteQuestion({
         chatId,
+        promptId,
         questionId,
         userId,
       });
