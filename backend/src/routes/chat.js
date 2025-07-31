@@ -1,5 +1,5 @@
 const express = require("express");
-const { body, query } = require("express-validator");
+const { body, query, param } = require("express-validator");
 const ChatController = require("../controllers/ChatController");
 const { chatRateLimiter } = require("../middleware/security");
 const { authenticate, optionalAuth } = require("../middleware/auth");
