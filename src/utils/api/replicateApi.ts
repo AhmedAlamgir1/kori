@@ -1,3 +1,5 @@
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
 interface ImageGenerationOptions {
   prompt: string;
   width?: number;
@@ -18,7 +20,7 @@ interface ImageGenerationResponse {
 }
 export async function generateImage(options: ImageGenerationOptions): Promise<string | null> {
   try {
-    const response = await fetch('/api/images/generate', {
+    const response = await fetch(`${API_BASE_URL}/api/images/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

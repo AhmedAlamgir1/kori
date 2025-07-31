@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Briefcase, BookOpen, Lightbulb, UserCheck, PenTool } from "lucide-react";
 import { motion } from "framer-motion";

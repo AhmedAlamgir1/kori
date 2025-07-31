@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 // Types for auth API
 export interface User {
@@ -71,24 +71,24 @@ async function makeAuthenticatedRequest(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<any> {
-  const token = localStorage.getItem('accessToken');
-  
+  const token = localStorage.getItem("accessToken");
+
   const response = await fetch(`${API_BASE_URL}/api/auth${endpoint}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
+      "Content-Type": "application/json",
+      ...(token && { Authorization: `Bearer ${token}` }),
       ...options.headers,
     },
-    credentials: 'include', // Include cookies for refresh tokens
+    credentials: "include", // Include cookies for refresh tokens
   });
 
   if (!response.ok) {
     const errorData: ApiError = await response.json().catch(() => ({
-      message: 'Network error',
-      statusCode: response.status
+      message: "Network error",
+      statusCode: response.status,
     }));
-    
+
     //throw new Error(errorData.message || `HTTP ${response.status}`);
     console.log(errorData, "errorDaaata");
     return errorData;
@@ -107,18 +107,19 @@ async function makePublicRequest(
   const response = await fetch(`${API_BASE_URL}/api/auth${endpoint}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...options.headers,
     },
-    credentials: 'include', // Include cookies for refresh tokens
+    credentials: "include", // Include cookies for refresh tokens
+    mode: "cors",
   });
 
   if (!response.ok) {
     const errorData: ApiError = await response.json().catch(() => ({
-      message: 'Network error',
-      statusCode: response.status
+      message: "Network error",
+      statusCode: response.status,
     }));
-    
+
     throw new Error(errorData.message || `HTTP ${response.status}`);
   }
 
@@ -128,24 +129,26 @@ async function makePublicRequest(
 /**
  * Register a new user
  */
-export async function register(userData: RegisterRequest): Promise<AuthResponse> {
+export async function register(
+  userData: RegisterRequest
+): Promise<AuthResponse> {
   try {
-    const response = await makePublicRequest('/register', {
-      method: 'POST',
+    const response = await makePublicRequest("/register", {
+      method: "POST",
       body: JSON.stringify(userData),
     });
 
     // Store tokens and user data
     if (response.data?.accessToken) {
-      localStorage.setItem('accessToken', response.data.accessToken);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      localStorage.setItem("accessToken", response.data.accessToken);
+      localStorage.setItem("user", JSON.stringify(response.data.user));
     }
 
-    toast.success('Registration successful! Welcome to Kori.');
+    toast.success("Registration successful! Welcome to Kori.");
     return response.data;
   } catch (error) {
-    console.error('Registration error:', error);
-    toast.error(error instanceof Error ? error.message : 'Registration failed');
+    console.error("Registration error:", error);
+    toast.error(error instanceof Error ? error.message : "Registration failed");
     throw error;
   }
 }
@@ -155,22 +158,22 @@ export async function register(userData: RegisterRequest): Promise<AuthResponse>
  */
 export async function login(credentials: LoginRequest): Promise<AuthResponse> {
   try {
-    const response = await makePublicRequest('/login', {
-      method: 'POST',
+    const response = await makePublicRequest("/login", {
+      method: "POST",
       body: JSON.stringify(credentials),
     });
 
     // Store tokens and user data
     if (response.data?.accessToken) {
-      localStorage.setItem('accessToken', response.data.accessToken);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      localStorage.setItem("accessToken", response.data.accessToken);
+      localStorage.setItem("user", JSON.stringify(response.data.user));
     }
 
-    toast.success('Login successful! Welcome back.');
+    toast.success("Login successful! Welcome back.");
     return response.data;
   } catch (error) {
-    console.error('Login error:', error);
-    toast.error(error instanceof Error ? error.message : 'Login failed');
+    console.error("Login error:", error);
+    toast.error(error instanceof Error ? error.message : "Login failed");
     throw error;
   }
 }
@@ -178,24 +181,26 @@ export async function login(credentials: LoginRequest): Promise<AuthResponse> {
 /**
  * Refresh access token
  */
-export async function refreshToken(refreshTokenData?: RefreshTokenRequest): Promise<{ accessToken: string }> {
+export async function refreshToken(
+  refreshTokenData?: RefreshTokenRequest
+): Promise<{ accessToken: string }> {
   try {
-    const response = await makePublicRequest('/refresh-token', {
-      method: 'POST',
+    const response = await makePublicRequest("/refresh-token", {
+      method: "POST",
       body: JSON.stringify(refreshTokenData || {}),
     });
 
     // Update stored access token
     if (response.data?.accessToken) {
-      localStorage.setItem('accessToken', response.data.accessToken);
+      localStorage.setItem("accessToken", response.data.accessToken);
     }
 
     return response.data;
   } catch (error) {
-    console.error('Token refresh error:', error);
+    console.error("Token refresh error:", error);
     // Clear stored tokens on refresh failure
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
     throw error;
   }
 }
@@ -205,20 +210,20 @@ export async function refreshToken(refreshTokenData?: RefreshTokenRequest): Prom
  */
 export async function logout(): Promise<void> {
   try {
-    await makeAuthenticatedRequest('/logout', {
-      method: 'POST',
+    await makeAuthenticatedRequest("/logout", {
+      method: "POST",
     });
 
     // Clear stored data
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
-    
-    toast.success('Logged out successfully');
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
+
+    toast.success("Logged out successfully");
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error("Logout error:", error);
     // Clear stored data even if logout request fails
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
     throw error;
   }
 }
@@ -228,20 +233,20 @@ export async function logout(): Promise<void> {
  */
 export async function logoutAll(): Promise<void> {
   try {
-    await makeAuthenticatedRequest('/logout-all', {
-      method: 'POST',
+    await makeAuthenticatedRequest("/logout-all", {
+      method: "POST",
     });
 
     // Clear stored data
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
-    
-    toast.success('Logged out from all devices successfully');
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
+
+    toast.success("Logged out from all devices successfully");
   } catch (error) {
-    console.error('Logout all error:', error);
+    console.error("Logout all error:", error);
     // Clear stored data even if logout request fails
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
     throw error;
   }
 }
@@ -251,11 +256,13 @@ export async function logoutAll(): Promise<void> {
  */
 export async function getProfile(): Promise<User> {
   try {
-    const response = await makeAuthenticatedRequest('/profile');
+    const response = await makeAuthenticatedRequest("/profile");
     return response.data.user;
   } catch (error) {
-    console.error('Get profile error:', error);
-    toast.error(error instanceof Error ? error.message : 'Failed to load profile');
+    console.error("Get profile error:", error);
+    toast.error(
+      error instanceof Error ? error.message : "Failed to load profile"
+    );
     throw error;
   }
 }
@@ -265,10 +272,10 @@ export async function getProfile(): Promise<User> {
  */
 export async function getCurrentUser(): Promise<User> {
   try {
-    const response = await makeAuthenticatedRequest('/me');
+    const response = await makeAuthenticatedRequest("/me");
     return response.data.user;
   } catch (error) {
-    console.error('Get current user error:', error);
+    console.error("Get current user error:", error);
     throw error;
   }
 }
@@ -276,23 +283,27 @@ export async function getCurrentUser(): Promise<User> {
 /**
  * Update user profile
  */
-export async function updateProfile(profileData: UpdateProfileRequest): Promise<User> {
+export async function updateProfile(
+  profileData: UpdateProfileRequest
+): Promise<User> {
   try {
-    const response = await makeAuthenticatedRequest('/profile', {
-      method: 'PUT',
+    const response = await makeAuthenticatedRequest("/profile", {
+      method: "PUT",
       body: JSON.stringify(profileData),
     });
 
     // Update stored user data
     if (response.data?.user) {
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      localStorage.setItem("user", JSON.stringify(response.data.user));
     }
 
-    toast.success('Profile updated successfully');
+    toast.success("Profile updated successfully");
     return response.data.user;
   } catch (error) {
-    console.error('Update profile error:', error);
-    toast.error(error instanceof Error ? error.message : 'Failed to update profile');
+    console.error("Update profile error:", error);
+    toast.error(
+      error instanceof Error ? error.message : "Failed to update profile"
+    );
     throw error;
   }
 }
@@ -300,15 +311,17 @@ export async function updateProfile(profileData: UpdateProfileRequest): Promise<
 /**
  * Change password
  */
-export async function changePassword(passwordData: ChangePasswordRequest): Promise<any> {
+export async function changePassword(
+  passwordData: ChangePasswordRequest
+): Promise<any> {
   try {
-    const res = await makeAuthenticatedRequest('/change-password', {
-      method: 'PUT',
+    const res = await makeAuthenticatedRequest("/change-password", {
+      method: "PUT",
       body: JSON.stringify(passwordData),
     });
     return res;
   } catch (error) {
-    console.error('Change password error:', error);
+    console.error("Change password error:", error);
     throw error;
   }
 }
@@ -319,16 +332,16 @@ export async function changePassword(passwordData: ChangePasswordRequest): Promi
 export async function deleteAccount(userId: string): Promise<any> {
   try {
     const accessToken = localStorage.getItem("accessToken");
-    const res = await makeAuthenticatedRequest('/profile', {
+    const res = await makeAuthenticatedRequest("/profile", {
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
       },
-      method: 'DELETE'
+      method: "DELETE",
     });
     return res;
   } catch (error) {
-    console.error('Delete account error:', error);
+    console.error("Delete account error:", error);
     throw error;
   }
 }
@@ -336,17 +349,21 @@ export async function deleteAccount(userId: string): Promise<any> {
 /**
  * Request password reset
  */
-export async function forgotPassword(emailData: ForgotPasswordRequest): Promise<void> {
+export async function forgotPassword(
+  emailData: ForgotPasswordRequest
+): Promise<void> {
   try {
-    await makePublicRequest('/forgot-password', {
-      method: 'POST',
+    await makePublicRequest("/forgot-password", {
+      method: "POST",
       body: JSON.stringify(emailData),
     });
 
-    toast.success('Password reset email sent. Please check your inbox.');
+    toast.success("Password reset email sent. Please check your inbox.");
   } catch (error) {
-    console.error('Forgot password error:', error);
-    toast.error(error instanceof Error ? error.message : 'Failed to send reset email');
+    console.error("Forgot password error:", error);
+    toast.error(
+      error instanceof Error ? error.message : "Failed to send reset email"
+    );
     throw error;
   }
 }
@@ -354,17 +371,23 @@ export async function forgotPassword(emailData: ForgotPasswordRequest): Promise<
 /**
  * Reset password with token
  */
-export async function resetPassword(resetData: ResetPasswordRequest): Promise<void> {
+export async function resetPassword(
+  resetData: ResetPasswordRequest
+): Promise<void> {
   try {
-    await makePublicRequest('/reset-password', {
-      method: 'POST',
+    await makePublicRequest("/reset-password", {
+      method: "POST",
       body: JSON.stringify(resetData),
     });
 
-    toast.success('Password reset successfully. You can now log in with your new password.');
+    toast.success(
+      "Password reset successfully. You can now log in with your new password."
+    );
   } catch (error) {
-    console.error('Reset password error:', error);
-    toast.error(error instanceof Error ? error.message : 'Failed to reset password');
+    console.error("Reset password error:", error);
+    toast.error(
+      error instanceof Error ? error.message : "Failed to reset password"
+    );
     throw error;
   }
 }
@@ -374,14 +397,16 @@ export async function resetPassword(resetData: ResetPasswordRequest): Promise<vo
  */
 export async function verifyAccount(): Promise<void> {
   try {
-    await makeAuthenticatedRequest('/verify', {
-      method: 'PUT',
+    await makeAuthenticatedRequest("/verify", {
+      method: "PUT",
     });
 
-    toast.success('Account verified successfully');
+    toast.success("Account verified successfully");
   } catch (error) {
-    console.error('Verify account error:', error);
-    toast.error(error instanceof Error ? error.message : 'Failed to verify account');
+    console.error("Verify account error:", error);
+    toast.error(
+      error instanceof Error ? error.message : "Failed to verify account"
+    );
     throw error;
   }
 }
@@ -390,8 +415,8 @@ export async function verifyAccount(): Promise<void> {
  * Check if user is authenticated
  */
 export function isAuthenticated(): boolean {
-  const token = localStorage.getItem('accessToken');
-  const user = localStorage.getItem('user');
+  const token = localStorage.getItem("accessToken");
+  const user = localStorage.getItem("user");
   return !!(token && user);
 }
 
@@ -399,13 +424,13 @@ export function isAuthenticated(): boolean {
  * Get stored user data
  */
 export function getStoredUser(): User | null {
-  const userStr = localStorage.getItem('user');
+  const userStr = localStorage.getItem("user");
   if (userStr) {
     try {
       return JSON.parse(userStr);
     } catch (error) {
-      console.error('Error parsing stored user data:', error);
-      localStorage.removeItem('user');
+      console.error("Error parsing stored user data:", error);
+      localStorage.removeItem("user");
       return null;
     }
   }
@@ -423,13 +448,13 @@ export function googleLogin(): void {
  * Get stored access token
  */
 export function getAccessToken(): string | null {
-  return localStorage.getItem('accessToken');
+  return localStorage.getItem("accessToken");
 }
 
 /**
  * Clear all stored auth data
  */
 export function clearAuthData(): void {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('user');
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("user");
 }

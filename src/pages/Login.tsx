@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { login, googleLogin } from "../utils/api/authApi";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { login, googleLogin, isAuthenticated } from "../utils/api/authApi";
 import { GoogleIcon } from "@/components/ui/google-icon";
 interface LoginFormState {
   email: string;
@@ -13,6 +13,19 @@ function Login() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    if (isAuthenticated()) {
+      // If user is already logged in, redirect to dashboard or the intended destination
+      const from = location.state?.from?.pathname || "/dashboard";
+      navigate(from, { replace: true });
+    }
+  }, [navigate, location]);
+
+  // Get the redirect path from location state
+  const from = location.state?.from?.pathname || "/dashboard";
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -36,7 +49,7 @@ function Login() {
         password: form.password,
       });
 
-      navigate("/dashboard");
+      navigate(from);
     } catch (error) {
       setError(
         error instanceof Error
@@ -49,8 +62,6 @@ function Login() {
   };
 
   const handleOAuth = () => {
-    setIsLoading(true);
-    setError(null);
     googleLogin();
   }
 

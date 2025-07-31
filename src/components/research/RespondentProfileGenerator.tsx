@@ -38,10 +38,10 @@ const RespondentProfileGenerator: React.FC<RespondentProfileGeneratorProps> = ({
   } = useProfileStore();
 
   const fetchProfiles = async () => {
-    if (regenerationsLeft <= 0) {
-      toast.error("You've reached the maximum number of regenerations (3)");
-      return;
-    }
+    // if (regenerationsLeft <= 0) {
+    //   toast.error("You've reached the maximum number of regenerations (3)");
+    //   return;
+    // }
 
     setLoading(true);
     setError(null);
@@ -176,7 +176,7 @@ const RespondentProfileGenerator: React.FC<RespondentProfileGeneratorProps> = ({
                 variant="outline"
                 size="sm"
                 className="text-blue-200/90 border-blue-500/30 hover:bg-blue-600/30"
-                disabled={regenerationsLeft <= 0}
+                //disabled={regenerationsLeft <= 0}
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 {loading ? 'Generating...' : `Regenerate (${regenerationsLeft} left)`}

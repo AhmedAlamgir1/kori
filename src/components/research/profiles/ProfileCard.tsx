@@ -113,11 +113,9 @@ Unique Perspective: ${profile.perspective}
                   }}
                 />
               ) : (
-                <img 
-                  src={userpic} 
-                  alt={`${profile.name}'s profile picture`} 
-                  className="size-32 rounded-full object-cover"
-                />
+                <div className="size-32 rounded-full bg-slate-700 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400"></div>
+                </div>
               )}
             </div>
             <div>

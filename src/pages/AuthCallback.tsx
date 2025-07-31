@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
 function AuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -26,7 +28,7 @@ function AuthCallback() {
           
           // Fetch user data using the token
           try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
+            const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
@@ -35,7 +37,7 @@ function AuthCallback() {
 
             if (response.ok) {
               const userData = await response.json();
-              localStorage.setItem("user", JSON.stringify(userData.data));
+              localStorage.setItem("user", JSON.stringify(userData.data.user));
               toast.success("Successfully logged in with Google!");
               navigate("/dashboard");
             } else {
