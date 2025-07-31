@@ -58,7 +58,7 @@ const App = () => {
               <Route path="/signup" element={<Signup />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route 
-                path="/Dashboard" 
+                path="/dashboard" 
                 element={
                   <ProtectedRoute>
                     <Dashboard />

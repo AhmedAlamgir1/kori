@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
 function AuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -26,7 +28,7 @@ function AuthCallback() {
           
           // Fetch user data using the token
           try {
-            const response = await fetch("/api/auth/me", {
+            const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',

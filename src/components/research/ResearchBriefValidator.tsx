@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { validateTopicLegitimacy } from "@/utils/research/topicValidator";
 import { useChatStore } from '@/stores/useChatStore';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
 interface ResearchBriefValidatorProps {
   opportunity: string;
   setOpportunity: (value: string) => void;
@@ -86,7 +88,7 @@ const ResearchBriefValidator: React.FC<ResearchBriefValidatorProps> = ({
             category: researchApproach
           };
 
-          const response = await fetch('/api/chat', {
+          const response = await fetch(`${API_BASE_URL}/api/chat`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

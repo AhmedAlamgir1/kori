@@ -2,7 +2,7 @@
 
 import { toast } from "sonner"; // Assuming you have 'sonner' for toasts
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 /**
  * Helper function for making POST requests to the ChatGPT proxy backend.
