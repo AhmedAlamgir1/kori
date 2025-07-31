@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import ResearchBriefValidator from "@/components/research/ResearchBriefValidator";
-import ResearchDashboard from "@/components/research/ResearchDashboard";
+import ResearchDashboard, { navigateToTab } from "@/components/research/ResearchDashboard";
 import ResearchOptionsGrid from "@/components/research/ResearchOptionsGrid";
 import { Button } from "@/components/ui/button";
 import { Edit, Home, Wrench } from "lucide-react";
@@ -39,17 +39,52 @@ const Understand = () => {
   const [researchApproach, setResearchApproach] = useState<ResearchApproach>(RESEARCH_APPROACHES.EXPLORATIVE);
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
-
-  // This useEffect stores the opportunity in localStorage when it changes and is ready.
-  // We're explicitly checking for `opportunity` not being empty.
+  const [currentTab, setCurrentTab] = useState<string>("profiles");
+  const hasPushedStateRef = useRef<boolean>(false);
   useEffect(() => {
     if (opportunity && isReady) {
       localStorage.setItem('currentResearchOpportunity', opportunity);
     }
   }, [opportunity, isReady]);
 
+  useEffect(() => {
+    const handlePopState = () => {
+      if (isReady && selectedTool && currentTab === "questions") {
+        navigateToTab("profiles");
+        setCurrentTab("profiles");
+        window.history.pushState(null, '', window.location.href);
+      }
+    };
+
+    if (isReady && selectedTool && currentTab === "questions" && !hasPushedStateRef.current) {
+      window.history.pushState(null, '', window.location.href);
+      hasPushedStateRef.current = true;
+    }
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isReady, selectedTool, currentTab]);
+
+  useEffect(() => {
+    const handleTabNavigation = (event: CustomEvent<{ tabValue: string }>) => {
+      const { tabValue } = event.detail;
+      setCurrentTab(tabValue);
+      
+      if (tabValue !== "questions") {
+        hasPushedStateRef.current = false;
+      }
+    };
+    
+    document.addEventListener('research-dashboard-navigate', handleTabNavigation as EventListener);
+    
+    return () => {
+      document.removeEventListener('research-dashboard-navigate', handleTabNavigation as EventListener);
+    };
+  }, []);
+
   const handleValidationSuccess = useCallback((approach: ResearchApproach) => {
-    // Clear any previously selected research profile when a new opportunity is set
     const selectProfile = useProfileStore.getState().selectProfile;
     selectProfile(null);
     setResearchApproach(approach);
@@ -59,6 +94,16 @@ const Understand = () => {
   const handleSelectTool = useCallback((tool: string) => {
     console.log("Selected tool:", tool);
     setSelectedTool(tool);
+    // Reset the pushed state flag when selecting a new tool
+    hasPushedStateRef.current = false;
+    // Set initial tab based on the selected tool
+    if (tool === "interview-questions") {
+      setCurrentTab("questions");
+    } else if (tool === "profiles") {
+      setCurrentTab("profiles");
+    } else if (tool === "mock-interview") {
+      setCurrentTab("chat");
+    }
   }, []); // No dependencies, so useCallback is fine.
 
   // Centralized function for actions requiring confirmation

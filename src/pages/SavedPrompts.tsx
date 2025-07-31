@@ -130,10 +130,17 @@ const SavedPrompts = () => {
                 These profiles represent diverse fictional respondents who might provide unique insights about your opportunity: <span className="text-indigo-300 font-medium">{selectedChat.initialPrompt}</span>
               </p>
             </div>
+            {selectedChat.prompts.length > 0 ? (
+              <ProfileGrid
+                profiles={selectedChat.prompts.map(convertPromptToProfile)}
+              />
+            ) : (
+              <div className="text-center py-20">
+                <div className="text-6xl mb-4">📋</div>
+                <h2 className="text-xl font-bold text-white mb-2">Profiles don't exists on this prompt</h2>
+              </div>
+            )}
 
-            <ProfileGrid
-              profiles={selectedChat.prompts.map(convertPromptToProfile)}
-            />
           </div>
         ) : (
           <div className="text-center py-20">

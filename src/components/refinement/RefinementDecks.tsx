@@ -35,6 +35,13 @@ const RefinementDecks: React.FC<RefinementDecksProps> = ({
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     try {
+      const response = await fetch('http://localhost:3001/api/gemini', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: yourPrompt }),
+      });
       const result = await Promise.race([
         generateTailoredPrompts(problemStatement, selectedIdeas[0], deckType),
         new Promise<PromptCard[]>((_, reject) => {
