@@ -1,6 +1,26 @@
 const mongoose = require("mongoose");
 const { MESSAGE_ROLES } = require("../constants/messageRoles");
 
+// Question schema for storing predefined questions
+const questionSchema = new mongoose.Schema(
+  {
+    category: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: [100, "Question category cannot exceed 100 characters"],
+    },
+    question: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: [500, "Question cannot exceed 500 characters"],
+    },
+  },
+  {
+    _id: true,
+  }
+);
 // Prompt schema for AI character-based conversations
 const promptSchema = new mongoose.Schema(
   {
@@ -62,27 +82,6 @@ const promptSchema = new mongoose.Schema(
     createdAt: {
       type: Date,
       default: Date.now,
-    },
-  },
-  {
-    _id: true,
-  }
-);
-
-// Question schema for storing predefined questions
-const questionSchema = new mongoose.Schema(
-  {
-    category: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: [100, "Question category cannot exceed 100 characters"],
-    },
-    question: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: [500, "Question cannot exceed 500 characters"],
     },
   },
   {

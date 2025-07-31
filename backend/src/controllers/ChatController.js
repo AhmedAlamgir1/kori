@@ -493,12 +493,11 @@ class ChatController {
   // Add a prompt to a chat
   static async addPrompt(req, res, next) {
     try {
-      const { chatId, questions } = req.params;
+      const { chatId } = req.params;
 
       const promptData = {
         ...req.body,
         userId: req.userId,
-        questions: questions,
       };
       const userId = req.user ? req.user._id : null;
       if (!userId) {
