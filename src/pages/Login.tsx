@@ -132,14 +132,14 @@ function Login() {
           </form>
 
           <div className="text-center mt-4 mb-4">OR</div>
-          <button
+          {/* <button
             onClick={handleOAuth}
             type="submit"
             className="w-full py-2 text-black bg-white rounded-lg hover:bg-blue-700 focus:outline-none cursor-pointer mb-4 flex items-center justify-center gap-3"
           >
             <GoogleIcon className="w-5 h-5" />
             Login With Google
-          </button>
+          </button> */}
 
           <button
             onClick={() => navigate("/landing")}
