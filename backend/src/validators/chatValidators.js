@@ -86,9 +86,10 @@ const sendMessageValidation = [
     .withMessage("Role must be one of the valid message roles"),
 
   body("promptId")
-    .optional()
     .isMongoId()
-    .withMessage("Prompt ID must be a valid MongoDB ObjectId"),
+    .withMessage("Prompt ID must be a valid MongoDB ObjectId")
+    .notEmpty()
+    .withMessage("Prompt ID is required"),
 
   body("reset")
     .optional()
