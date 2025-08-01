@@ -189,19 +189,22 @@ class ChatController {
     try {
       const userId = req.user._id;
       const { chatId } = req.params;
-      const { message, promptId, reset = false } = req.body;
+      const { message, role = "user", promptId, reset = false } = req.body;
 
       // Debug logging to help identify the issue
       console.log(
         "ChatController.sendMessage - Raw message:",
         typeof message,
-        message
+        message,
+        "Role:",
+        role
       );
 
       const result = await ChatService.sendMessage({
         chatId,
         userId,
         userMessage: message,
+        role,
         promptId,
         reset,
       });

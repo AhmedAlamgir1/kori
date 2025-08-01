@@ -227,6 +227,7 @@ class ChatService {
       chatId,
       userId,
       userMessage,
+      role = "user", // Default to "user" if role is not provided
       promptId = null,
       reset = false,
     } = data;
@@ -273,12 +274,8 @@ class ChatService {
       messageContent = String(userMessage);
     }
 
-    // Add user message (role is always "user" for sendMessage)
-    const userMsg = await chat.addMessage(
-      activePromptId,
-      "user",
-      messageContent
-    );
+    // Add message with the provided role
+    const userMsg = await chat.addMessage(activePromptId, role, messageContent);
 
     return {
       userMessage: userMsg,

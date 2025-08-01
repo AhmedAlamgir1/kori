@@ -5,7 +5,7 @@
 
 const MESSAGE_ROLES = [
   "user", // User messages
-  "assistant", // AI assistant responses
+  "chatgpt", // AI assistant responses
   "system", // System messages
   "bot", // Bot responses (alternative to assistant)
   "moderator", // Moderation messages

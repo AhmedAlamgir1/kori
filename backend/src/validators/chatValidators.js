@@ -76,6 +76,15 @@ const sendMessageValidation = [
     .isLength({ min: 1, max: 10000 })
     .withMessage("Message content must be between 1 and 10,000 characters"),
 
+  body("role")
+    .isString()
+    .withMessage("Role must be a string")
+    .trim()
+    .notEmpty()
+    .withMessage("Role is required")
+    .isIn(MESSAGE_ROLES)
+    .withMessage("Role must be one of the valid message roles"),
+
   body("promptId")
     .optional()
     .isMongoId()
