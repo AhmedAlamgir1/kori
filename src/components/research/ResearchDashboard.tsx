@@ -3,9 +3,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Removed T
 import InterviewQuestionBuilder from "./InterviewQuestionBuilder";
 import RespondentProfileGenerator from "./RespondentProfileGenerator";
 import MockInterview from "./MockInterview";
-// No longer need these icons/buttons directly within ResearchDashboard for tab management
-// import { Button } from "@/components/ui/button";
-// import { UserPlus2, RefreshCw } from "lucide-react"; 
 import { RespondentProfile } from "./profile/types";
 import {
   Dialog,
@@ -17,6 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button"; // Re-added Button for dialog footer
 import useProfileStore from "@/stores/useProfileStore";
+import { useChatStore } from "@/stores/useChatStore";
+import { fetchAllUserChats } from "@/utils/api/chatApi";
 
 interface ResearchDashboardProps {
   opportunity: string;
@@ -72,13 +71,20 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({
     };
   }, []);
 
-  const handleTabChange = useCallback((value: string) => {
-    // Only prompt for confirmation if the tab is actually changing
-    // if (value === activeTab) return;
-    // setPendingTabChange(value);
-    // setShowConfirmDialog(true);
-    setActiveTab(value)
-  }, []); // Include activeTab in dependencies
+  const { setChats } = useChatStore();
+
+  const handleTabChange = useCallback(async (value: string) => {
+    // Load chats when switching to questions tab or chat tab
+    if (value === "questions" || value === "chat") {
+      try {
+        const data = await fetchAllUserChats();
+        setChats(data.data?.chats || []);
+      } catch (error) {
+        console.error("Failed to load chats:", error);
+      }
+    }
+    setActiveTab(value);
+  }, [setChats]); // Include setChats in dependencies
 
   const confirmTabChange = useCallback(() => {
     if (pendingTabChange) {

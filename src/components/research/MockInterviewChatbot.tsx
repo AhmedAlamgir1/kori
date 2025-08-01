@@ -17,10 +17,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import useProfileStore from "@/stores/useProfileStore";
+import { sendMessageToChat } from "../../utils/api/chatApi";
+import { useChatStore } from "@/stores/useChatStore";
 
 interface Message {
   id: string;
-  role: "user" | "assistant";
+  role: "user" | "chatgpt";
   content: string;
 }
 
@@ -28,9 +30,15 @@ interface MockInterviewChatbotProps {
   opportunity: string;
   profile: RespondentProfile;
   onChangeProfile?: (newProfile?: RespondentProfile) => void;
+  chatId: string; // Add chatId prop
 }
 
-const MockInterviewChatbot: React.FC<MockInterviewChatbotProps> = ({ opportunity, profile, onChangeProfile }) => {
+const MockInterviewChatbot: React.FC<MockInterviewChatbotProps> = ({ 
+  opportunity, 
+  profile, 
+  onChangeProfile,
+  chatId 
+}) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -44,6 +52,9 @@ const MockInterviewChatbot: React.FC<MockInterviewChatbotProps> = ({ opportunity
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [profiles, setProfiles] = useState<RespondentProfile[]>([]);
   const [pendingProfile, setPendingProfile] = useState<RespondentProfile | null>(null);
+
+  const { chats } = useChatStore();
+  const currentChat = chats.find(chat => chat._id === chatId);
 
   // Get profiles from Zustand store
   const { profiles: storeProfiles } = useProfileStore();
@@ -80,7 +91,7 @@ const MockInterviewChatbot: React.FC<MockInterviewChatbotProps> = ({ opportunity
         // Reset chat with new profile
         const welcomeMessage: Message = {
           id: 'welcome',
-          role: 'assistant' as const,
+          role: 'chatgpt' as const,
           content: `Hello! I am ${pendingProfile.name}`
         };
         setMessages([welcomeMessage]);
@@ -105,7 +116,7 @@ const MockInterviewChatbot: React.FC<MockInterviewChatbotProps> = ({ opportunity
     if (profile && opportunity) {
       const welcomeMessage: Message = {
         id: 'welcome',
-        role: 'assistant' as const,
+        role: 'chatgpt' as const,
         content: `Hello! I am ${profile.name}`
       };
       setMessages([welcomeMessage]);
@@ -329,13 +340,46 @@ const MockInterviewChatbot: React.FC<MockInterviewChatbotProps> = ({ opportunity
     const userMessage = inputMessage.trim();
     setInputMessage("");
     
-    // Add the user message to the chat
-    setMessages(prev => [...prev, { id: `user-${Date.now()}`, role: "user", content: userMessage }]);
+    // Add the user message to the chat UI
+    const userMessageObj: Message = { 
+      id: `user-${Date.now()}`, 
+      role: "user", 
+      content: userMessage 
+    };
+    setMessages(prev => [...prev, userMessageObj]);
     
+    // Save user message to database
+    try {
+      await sendMessageToChat(chatId, {
+        message: userMessage,
+        role: "user",
+        promptId: profile._id
+      });
+    } catch (error) {
+      console.error("Error saving user message:", error);
+      toast.error("Failed to save message to database");
+    }
+
     // Check if input needs validation
     const validationResponse = getValidationResponse(userMessage);
     if (validationResponse) {
-      setMessages(prev => [...prev, { id: `assistant-${Date.now()}`, role: "assistant", content: validationResponse }]);
+      const validationMessage: Message = { 
+        id: `assistant-${Date.now()}`, 
+        role: "chatgpt", 
+        content: validationResponse 
+      };
+      setMessages(prev => [...prev, validationMessage]);
+      
+      // Save validation response to database
+      try {
+        await sendMessageToChat(chatId, {
+          message: validationResponse,
+          role: "chatgpt",
+          promptId: profile._id
+        });
+      } catch (error) {
+        console.error("Error saving validation message:", error);
+      }
       return; // Don't increment interaction count for invalid responses
     }
     
@@ -362,7 +406,25 @@ const MockInterviewChatbot: React.FC<MockInterviewChatbotProps> = ({ opportunity
       );
 
       if (response) {
-        setMessages(prev => [...prev, { id: `assistant-${Date.now()}`, role: "assistant", content: response }]);
+        // Add assistant response to UI
+        const assistantMessage: Message = {
+          id: `assistant-${Date.now()}`,
+          role: "chatgpt",
+          content: response
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+        
+        // Save assistant response to database
+        try {
+          await sendMessageToChat(chatId, {
+            message: response,
+            role: "chatgpt",
+            promptId: profile._id
+          });
+        } catch (error) {
+          console.error("Error saving assistant response:", error);
+          toast.error("Failed to save response to database");
+        }
       }
     } catch (error) {
       console.error("Error in mock interview:", error);
@@ -375,7 +437,7 @@ const MockInterviewChatbot: React.FC<MockInterviewChatbotProps> = ({ opportunity
   const handleRefreshClick = () => {
     setMessages([{ 
       id: `welcome-${Date.now()}`,
-      role: "assistant", 
+      role: "chatgpt", 
       content: `Hi, I am ${profile.name}` 
     }]);
     setInteractionCount(0);

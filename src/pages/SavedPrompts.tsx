@@ -8,6 +8,13 @@ import {
 import ProfileGrid from "@/components/research/profiles/ProfileGrid";
 import useProfileStore from "@/stores/useProfileStore";
 
+interface Question {
+  category: string;
+  question: string;
+  _id: string;
+  id: string;
+}
+
 interface Prompt {
   profile: {
     name: string;
@@ -20,6 +27,7 @@ interface Prompt {
   isActive: boolean;
   _id: string;
   createdAt: string;
+  questions: Question[];
 }
 
 interface Chat {
@@ -40,7 +48,8 @@ const convertPromptToProfile = (prompt: Prompt) => ({
   perspective: prompt.uniquePerspective,
   image: prompt.imageUrl,
   imageLoading: false,
-  isCustom: false
+  isCustom: false,
+  _id: prompt._id
 });
 
 const SavedPrompts = () => {
@@ -48,6 +57,9 @@ const SavedPrompts = () => {
   const { chats, selectedChatId, setSelectedChatId } = useChatStore();
   const { setProfiles } = useProfileStore();
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  const [selectedProfileIndex, setSelectedProfileIndex] = useState<number | null>(null);
+  const [showQuestions, setShowQuestions] = useState(false);
+  const [currentQuestions, setCurrentQuestions] = useState<Question[]>([]);
 
   useEffect(() => {
     if (selectedChatId) {
@@ -70,6 +82,20 @@ const SavedPrompts = () => {
 
   const handleBackToDashboard = () => {
     navigate('/dashboard');
+  };
+
+  const handleSelectProfile = (index: number) => {
+    setSelectedProfileIndex(index);
+    setShowQuestions(false); // Hide questions when selecting a new profile
+    setCurrentQuestions([]);
+  };
+
+  const handleGenerateQuestions = () => {
+    navigate('/generated-questions');
+  };
+
+  const handleMockInterview = () => {
+    navigate('/saved-mock-interview');
   };
 
   if (chats.length === 0) {
@@ -131,16 +157,45 @@ const SavedPrompts = () => {
               </p>
             </div>
             {selectedChat.prompts.length > 0 ? (
-              <ProfileGrid
-                profiles={selectedChat.prompts.map(convertPromptToProfile)}
-              />
+              <>
+                <ProfileGrid
+                  profiles={selectedChat.prompts.map(convertPromptToProfile)}
+                  selectedProfileIndex={selectedProfileIndex}
+                  onSelectProfile={handleSelectProfile}
+                  onGenerateQuestions={handleGenerateQuestions}
+                  onMockInterview={handleMockInterview}
+                />
+                {showQuestions && currentQuestions.length > 0 && (
+                  <div className="mt-8 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-indigo-500/30 p-6">
+                    <h3 className="text-2xl font-semibold text-white mb-4">Generated Questions</h3>
+                    <div className="space-y-6">
+                      {Array.from(new Set(currentQuestions.map(q => q.category))).map(category => (
+                        <div key={category} className="space-y-3">
+                          <h4 className="text-lg font-medium text-indigo-300">{category}</h4>
+                          <div className="space-y-2">
+                            {currentQuestions
+                              .filter(q => q.category === category)
+                              .map(question => (
+                                <div 
+                                  key={question._id} 
+                                  className="bg-slate-700/50 rounded-lg p-4 text-blue-100/90"
+                                >
+                                  {question.question}
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center py-20">
                 <div className="text-6xl mb-4">📋</div>
                 <h2 className="text-xl font-bold text-white mb-2">Profiles don't exists on this prompt</h2>
               </div>
             )}
-
           </div>
         ) : (
           <div className="text-center py-20">

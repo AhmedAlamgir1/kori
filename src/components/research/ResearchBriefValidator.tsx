@@ -7,6 +7,7 @@ import { Loader2, AlertCircle, Search, Microscope } from "lucide-react";
 import { toast } from "sonner";
 import { validateTopicLegitimacy } from "@/utils/research/topicValidator";
 import { useChatStore } from '@/stores/useChatStore';
+import { fetchAllUserChats } from "@/utils/api/chatApi";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -97,7 +98,7 @@ const ResearchBriefValidator: React.FC<ResearchBriefValidatorProps> = ({
             body: JSON.stringify(chatPayload)
           });
 
-          const data = await response.json();
+           const data = await response.json();
 
           if (!response.ok) {
             throw new Error(data.message || 'Failed to create chat');
@@ -107,9 +108,10 @@ const ResearchBriefValidator: React.FC<ResearchBriefValidatorProps> = ({
           const chatId = data.data?.chat?._id;
           if (!chatId) {
             throw new Error('Chat ID not returned from backend');
-          }
+          } 
           useChatStore.getState().setChatId(chatId);
-
+          const chats = await fetchAllUserChats();
+          useChatStore.getState().setChats(chats.data?.chats || []);
           toast.success("Chat created successfully!");
 
           onValidationSuccess(researchApproach, chatId);
