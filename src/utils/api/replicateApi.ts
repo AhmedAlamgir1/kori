@@ -40,7 +40,8 @@ export async function generateImage(options: ImageGenerationOptions): Promise<st
 
     const result: ImageGenerationResponse = await response.json();
     
-    if (result.success && result.data && result.data.imageUrl) {
+    if (result.success && result.data && result.data.imageUrl && typeof result.data.imageUrl === 'string' &&
+      result.data.imageUrl.trim() !== '') {
       return result.data.imageUrl;
     } else {
       console.error('Invalid response from image generation API:', result);

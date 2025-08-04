@@ -15,7 +15,6 @@ import {
 import { Button } from "@/components/ui/button"; // Re-added Button for dialog footer
 import useProfileStore from "@/stores/useProfileStore";
 import { useChatStore } from "@/stores/useChatStore";
-import { fetchAllUserChats } from "@/utils/api/chatApi";
 
 interface ResearchDashboardProps {
   opportunity: string;
@@ -74,15 +73,6 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({
   const { setChats } = useChatStore();
 
   const handleTabChange = useCallback(async (value: string) => {
-    // Load chats when switching to questions tab or chat tab
-    if (value === "questions" || value === "chat") {
-      try {
-        const data = await fetchAllUserChats();
-        setChats(data.data?.chats || []);
-      } catch (error) {
-        console.error("Failed to load chats:", error);
-      }
-    }
     setActiveTab(value);
   }, [setChats]); // Include setChats in dependencies
 
