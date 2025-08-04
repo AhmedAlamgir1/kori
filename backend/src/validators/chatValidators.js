@@ -48,9 +48,7 @@ const addPromptValidation = [
     .isLength({ min: 1, max: 150 })
     .withMessage("Occupation must be between 1 and 150 characters"),
 
-  body("profile.age")
-    .isInt({ min: 18, max: 100 })
-    .withMessage("Age must be between 18 and 100"),
+  body("profile.age").isInt().withMessage("Age must be between 18 and 100"),
 
   body("profile.uniquePerspective")
     .trim()
