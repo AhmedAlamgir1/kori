@@ -89,9 +89,7 @@ const cookieParser = require("cookie-parser");
 // Import the OpenAI library instead of GoogleGenerativeAI
 const OpenAI = require("openai");
 require("dotenv").config();
-const authRoutes = require("./src/routes/auth");
-const chatRoutes = require("./src/routes/chat");
-const imageRoutes = require("./src/routes/image");
+
 // Import the new authentication and security modules
 const connectDB = require("./src/config/database");
 const config = require("./src/config/config");
@@ -243,15 +241,7 @@ app.post("/api/chatgpt", async (req, res) => {
 });
 
 // Use the new API routes (includes authentication, health check, etc.)
-// app.use("/", apiRoutes);
-// Authentication routes
-app.use("/auth", authRoutes);
-
-// Chat routes
-app.use("/chat", chatRoutes);
-
-// Image routes
-app.use("/images", imageRoutes);
+app.use("/api", apiRoutes);
 
 // Error handling middleware (must be after all routes)
 app.use(notFoundHandler);
