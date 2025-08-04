@@ -241,7 +241,7 @@ app.post("/api/chatgpt", async (req, res) => {
 });
 
 // Use the new API routes (includes authentication, health check, etc.)
-app.use("/", apiRoutes);
+app.use("/api", apiRoutes);
 
 // Error handling middleware (must be after all routes)
 app.use(notFoundHandler);
