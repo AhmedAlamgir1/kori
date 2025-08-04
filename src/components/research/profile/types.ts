@@ -9,6 +9,7 @@ export interface RespondentProfile {
   image?: string;
   imageLoading?: boolean;
   isCustom?: boolean;
+  _id?: string; // MongoDB ObjectId of the prompt
 }
 
 export interface UserProfile {

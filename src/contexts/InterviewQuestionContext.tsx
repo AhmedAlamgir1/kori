@@ -6,6 +6,9 @@ import {
   InterviewQuestionContextType
 } from "@/utils/research/interviewQuestionTypes";
 import useProfileStore from "@/stores/useProfileStore";
+import { saveQuestionsToDatabase } from "@/utils/api/chatApi";
+import { useChatStore } from "@/stores/useChatStore";
+import { fetchAllUserChats } from "@/utils/api/chatApi";
 
 // Create context with default values
 const InterviewQuestionContext = createContext<InterviewQuestionContextType | undefined>(undefined);
@@ -49,18 +52,51 @@ export const InterviewQuestionProvider: React.FC<InterviewQuestionProviderProps>
 
   const fetchQuestions = async (isProfileChange: boolean = false) => {
     if (!isProfileChange && regenerationsLeft <= 0) {
-      toast.error("You've reached the maximum number of regenerations (3)");
+      //toast.error("You've reached the maximum number of regenerations (3)");
       return;
     }
 
     setLoading(true);
     setError(null);
     try {
-      // Use the profile from Zustand store
+      const { chatId } = useChatStore.getState();
+      
+      
+      // if (chatId && selectedProfile) {
+      //   const currentChat = chats.find(chat => chat._id === chatId);
+        
+      //   if (currentChat && currentChat.prompts) {
+      //     const matchingPrompt = currentChat.prompts.find(prompt => {
+      //       const promptAge = Number(prompt.profile?.age);
+      //       const profileAge = Number(selectedProfile.age);
+            
+      //       return prompt.profile?.name === selectedProfile.name &&
+      //              promptAge === profileAge &&
+      //              prompt.profile?.occupation === selectedProfile.occupation;
+      //     });
+
+      //     // If we found a matching prompt and it has questions, use those
+      //     if (matchingPrompt && matchingPrompt.questions && matchingPrompt.questions.length > 0) {
+      //       const existingQuestions = matchingPrompt.questions.map(q => ({
+      //         question: q.question,
+      //         explanation: "", // No explanation stored in DB
+      //         category: q.category
+      //       }));
+            
+      //       setQuestionsWithExplanations(existingQuestions);
+      //       const uniqueCategories: string[] = Array.from(new Set(existingQuestions.map(q => q.category || "General")));
+      //       setCategories(uniqueCategories);
+      //       toast.success("Loaded existing questions from database!");
+      //       setLoading(false);
+      //       return;
+      //     }
+      //   }
+      // }
+
+      // If no existing questions found, proceed with GPT generation
       let profileContext = "";
       
       if (selectedProfile) {
-        // Create profile context to enhance question generation
         profileContext = `The questions should be tailored for interviewing a respondent with the following profile:
         - Name: ${selectedProfile.name}
         - Age: ${selectedProfile.age}
@@ -68,7 +104,6 @@ export const InterviewQuestionProvider: React.FC<InterviewQuestionProviderProps>
         - Background: ${selectedProfile.background}
         - Unique Perspective: ${selectedProfile.perspective}`;
       } else {
-        // Explicitly make sure we generate general questions when no profile is selected
         profileContext = "Do NOT refer to any specific respondent profile. Generate general questions that would be suitable for any respondent. Do NOT make up or hallucinate any specific respondent details.";
       }
       
@@ -87,12 +122,50 @@ export const InterviewQuestionProvider: React.FC<InterviewQuestionProviderProps>
       setQuestionsWithExplanations(questionsWithExplanations);
       setCategories(categories);
       
-      // Only decrease regenerations if not triggered by profile change
+      // Save questions to database
+      try {
+        if (chatId && selectedProfile) {
+          let currentChat = null;
+          try {
+            const response = await fetchAllUserChats();
+            currentChat = response.data?.chats?.find(chat => chat._id === chatId);
+          } catch (error) {
+            console.error('Error fetching chats:', error);
+            // Handle the error, maybe return a fallback value
+          }
+          if (currentChat && currentChat.prompts) {
+            const matchingPrompt = currentChat.prompts.find(prompt => {
+              const promptAge = Number(prompt.profile?.age);
+              const profileAge = Number(selectedProfile.age);
+              
+              return prompt.profile?.name === selectedProfile.name &&
+                     promptAge === profileAge &&
+                     prompt.profile?.occupation === selectedProfile.occupation;
+            });
+            if (matchingPrompt) {
+              for (const q of questionsWithExplanations) {
+                const questionData = {
+                  category: q.category || "General",
+                  question: q.question
+                };
+                await saveQuestionsToDatabase(chatId, matchingPrompt._id, questionData);
+              }
+              toast.success("Questions generated and saved to database successfully!");
+            } else {
+              toast.info("Questions generated successfully! (Note: No matching prompt found)");
+            }
+          } else {
+            toast.info("Questions generated successfully! (Note: No prompts found)");
+          }
+        } else {
+          toast.info("Questions generated successfully! (Note: No chat context available)");
+        }
+      } catch (dbError) {
+        toast.info("Questions generated successfully! (Note: Database save failed)");
+      }
+      
       if (!isProfileChange) {
         decrementRegenerations();
-        // if (regenerationsLeft <= 1) {
-        //   toast.warning("This is your last regeneration!");
-        // }
       }
     } catch (error) {
       setError("Failed to generate interview questions. Please try again.");

@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { RespondentProfile } from "./profile/types";
 import MockInterviewChatbot from "./MockInterviewChatbot";
 import MockInterviewHeader from "./MockInterviewHeader";
 import useProfileStore from "@/stores/useProfileStore";
+import {useChatStore} from "@/stores/useChatStore";
 
 interface MockInterviewProps {
   opportunity: string;
@@ -10,12 +11,11 @@ interface MockInterviewProps {
 }
 
 const MockInterview: React.FC<MockInterviewProps> = ({ opportunity, onChangeProfile }) => {
-  // Use the Zustand store for profile management
   const { selectedProfile, selectProfile } = useProfileStore();
+  const { chatId } = useChatStore();
 
   const handleProfileChange = (newProfile?: RespondentProfile) => {
     if (newProfile) {
-      // Find the profile in the store or add it if it doesn't exist
       const profiles = useProfileStore.getState().profiles;
       const profileIndex = profiles.findIndex(p => 
         p.name === newProfile.name && 
@@ -26,7 +26,6 @@ const MockInterview: React.FC<MockInterviewProps> = ({ opportunity, onChangeProf
       if (profileIndex !== -1) {
         selectProfile(profileIndex);
       } else {
-        // If profile doesn't exist in store, add it and select it
         const updatedProfiles = [...profiles, newProfile];
         useProfileStore.getState().setProfiles(updatedProfiles);
         selectProfile(updatedProfiles.length - 1);
@@ -55,6 +54,14 @@ const MockInterview: React.FC<MockInterviewProps> = ({ opportunity, onChangeProf
     );
   }
 
+  if (!chatId) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-xl font-semibold text-white mb-4">Initializing Chat...</h3>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <MockInterviewHeader
@@ -66,6 +73,7 @@ const MockInterview: React.FC<MockInterviewProps> = ({ opportunity, onChangeProf
         opportunity={opportunity} 
         profile={selectedProfile}
         onChangeProfile={handleProfileChange}
+        chatId={chatId}
       />
     </div>
   );

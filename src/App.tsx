@@ -18,6 +18,8 @@ import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import AuthCallback from "./pages/AuthCallback";
 import SavedPrompts from "./pages/SavedPrompts";
+import GeneratedQuestions from "./pages/GeneratedQuestions";
+import SavedMockInterview from "./pages/SavedMockInterview";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -82,6 +84,22 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <SavedPrompts />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/generated-questions" 
+                element={
+                  <ProtectedRoute>
+                    <GeneratedQuestions />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/saved-mock-interview" 
+                element={
+                  <ProtectedRoute>
+                    <SavedMockInterview />
                   </ProtectedRoute>
                 } 
               />

@@ -4,6 +4,7 @@ import { generateProfileImage } from "../api/replicateApi";
 import { log } from "console";
 import { useChatStore } from "@/stores/useChatStore";
 import { createPromptForChat } from "@/utils/api/chatApi";
+import useProfileStore from "@/stores/useProfileStore";
 
 interface GenerationOptions {
   desiredAgeRange?: "teen" | "young adult" | "middle-aged" | "older";
@@ -20,6 +21,7 @@ export interface Profile {
   perspective: string;
   imageUrl?: string;
   imageLoading?: boolean;
+  _id?: string; // Add _id to the Profile interface
 }
 
 // Function to generate images for profiles concurrently and create prompts after each image
@@ -32,9 +34,22 @@ async function generateImagesForProfiles(profiles: Profile[], onImageGenerated: 
       );
       if (imageUrl) {
         onImageGenerated(index, imageUrl);
-        await createPromptForProfile(profile, chatId,imageUrl).catch(e => {
+        const promptId = await createPromptForProfile(profile, chatId, imageUrl).catch(e => {
           console.error('Prompt creation failed for profile', profile.name, e);
+          return null;
         });
+        if (promptId) {
+          // Update the profile in the store with the prompt ID
+          const { profiles: storeProfiles, setProfiles } = useProfileStore.getState();
+          const updatedProfiles = [...storeProfiles];
+          if (updatedProfiles[index]) {
+            updatedProfiles[index] = {
+              ...updatedProfiles[index],
+              _id: promptId
+            };
+            setProfiles(updatedProfiles);
+          }
+        }
       }
       return { index, success: true, imageUrl };
     } catch (error) {
@@ -46,7 +61,7 @@ async function generateImagesForProfiles(profiles: Profile[], onImageGenerated: 
 }
 
 // Create a prompt for a given profile and chat
-export async function createPromptForProfile(profile: Profile, chatId: string,imageUrl:string ) {
+export async function createPromptForProfile(profile: Profile, chatId: string, imageUrl: string) {
   const promptPayload = {
     background: profile.background,
     uniquePerspective: profile.perspective,
@@ -60,7 +75,7 @@ export async function createPromptForProfile(profile: Profile, chatId: string,im
   try {
     const data = await createPromptForChat(chatId, promptPayload);
     toast.success("Prompt created successfully!");
-    return data;
+    return data.data?.prompt?._id; // Return the prompt ID
   } catch (error: any) {
     toast.error(error.message || "Failed to create prompt");
     throw error;

@@ -1,6 +1,6 @@
 export interface Message {
   id: string;
-  role: "user" | "assistant";
+  role: "user" | "chatgpt";
   content: string;
 }
 
