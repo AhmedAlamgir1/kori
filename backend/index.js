@@ -82,7 +82,6 @@
 // });
 
 // server.js (or app.js)
-const authRoutes = require("./src/routes/auth");
 
 const express = require("express");
 const cors = require("cors");
@@ -243,7 +242,6 @@ app.post("/api/chatgpt", async (req, res) => {
 
 // Use the new API routes (includes authentication, health check, etc.)
 app.use("/api", apiRoutes);
-app.use("/auth", authRoutes);
 
 // Error handling middleware (must be after all routes)
 app.use(notFoundHandler);
