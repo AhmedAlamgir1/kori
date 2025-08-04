@@ -26,16 +26,16 @@ router.get("/test", (req, res) => {
 });
 
 // Authentication routes
-router.use("/auth", authRoutes);
+router.use("auth", authRoutes);
 
 // Chat routes
-router.use("/chat", chatRoutes);
+router.use("chat", chatRoutes);
 
 // Image routes
-router.use("/images", imageRoutes);
+router.use("images", imageRoutes);
 
 // Gemini AI endpoint (keeping your existing functionality, but with optional auth)
-router.post("/gemini", optionalAuth, async (req, res, next) => {
+router.post("gemini", optionalAuth, async (req, res, next) => {
   try {
     const { prompt } = req.body;
 
@@ -73,7 +73,7 @@ router.post("/gemini", optionalAuth, async (req, res, next) => {
 });
 
 // Protected route example
-router.get("/protected", authenticate, (req, res) => {
+router.get("protected", authenticate, (req, res) => {
   const response = ApiResponse.success("Access granted to protected resource", {
     user: req.user.fullName,
     message: "This is a protected route that requires authentication",
