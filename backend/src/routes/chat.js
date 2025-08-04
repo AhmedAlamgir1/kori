@@ -1,7 +1,7 @@
 const express = require("express");
 const { body, query, param } = require("express-validator");
 const ChatController = require("../controllers/ChatController");
-const { chatRateLimiter } = require("../middleware/security");
+
 const { authenticate, optionalAuth } = require("../middleware/auth");
 
 const {
@@ -29,7 +29,7 @@ const router = express.Router();
 // Chat management routes
 router.post(
   "/",
-  chatRateLimiter,
+
   createChatValidation,
   handleValidationErrors,
   authenticate,
@@ -85,7 +85,7 @@ router.get("/session/current", authenticate, ChatController.getCurrentSession);
 
 router.post(
   "/session/new",
-  chatRateLimiter,
+
   createChatValidation,
   handleValidationErrors,
   authenticate,
@@ -143,7 +143,7 @@ router.delete(
 // Prompt management routes
 router.post(
   "/:chatId/prompts",
-  chatRateLimiter,
+
   getChatValidation,
   // addPromptValidation,
   // handleValidationErrors,
@@ -191,7 +191,7 @@ router.delete(
 // Message management routes
 router.post(
   "/:chatId/messages",
-  chatRateLimiter,
+
   authenticate,
   getChatValidation,
   sendMessageValidation,
