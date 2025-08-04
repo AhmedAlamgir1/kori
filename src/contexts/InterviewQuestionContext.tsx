@@ -8,7 +8,7 @@ import {
 import useProfileStore from "@/stores/useProfileStore";
 import { saveQuestionsToDatabase } from "@/utils/api/chatApi";
 import { useChatStore } from "@/stores/useChatStore";
-import { fetchAllUserChats } from "@/utils/api/chatApi";
+
 
 // Create context with default values
 const InterviewQuestionContext = createContext<InterviewQuestionContextType | undefined>(undefined);
@@ -36,7 +36,7 @@ export const InterviewQuestionProvider: React.FC<InterviewQuestionProviderProps>
     selectedProfile, 
     regenerationsLeft, 
     decrementRegenerations, 
-    resetRegenerations 
+    resetRegenerations,
   } = useProfileStore();
 
   // Update currentOpportunity when prop changes
@@ -125,40 +125,14 @@ export const InterviewQuestionProvider: React.FC<InterviewQuestionProviderProps>
       // Save questions to database
       try {
         if (chatId && selectedProfile) {
-          let currentChat = null;
-          try {
-            const response = await fetchAllUserChats();
-            currentChat = response.data?.chats?.find(chat => chat._id === chatId);
-          } catch (error) {
-            console.error('Error fetching chats:', error);
-            // Handle the error, maybe return a fallback value
-          }
-          if (currentChat && currentChat.prompts) {
-            const matchingPrompt = currentChat.prompts.find(prompt => {
-              const promptAge = Number(prompt.profile?.age);
-              const profileAge = Number(selectedProfile.age);
-              
-              return prompt.profile?.name === selectedProfile.name &&
-                     promptAge === profileAge &&
-                     prompt.profile?.occupation === selectedProfile.occupation;
-            });
-            if (matchingPrompt) {
               for (const q of questionsWithExplanations) {
                 const questionData = {
                   category: q.category || "General",
                   question: q.question
                 };
-                await saveQuestionsToDatabase(chatId, matchingPrompt._id, questionData);
+                await saveQuestionsToDatabase(chatId, selectedProfile._id, questionData);
               }
               toast.success("Questions generated and saved to database successfully!");
-            } else {
-              toast.info("Questions generated successfully! (Note: No matching prompt found)");
-            }
-          } else {
-            toast.info("Questions generated successfully! (Note: No prompts found)");
-          }
-        } else {
-          toast.info("Questions generated successfully! (Note: No chat context available)");
         }
       } catch (dbError) {
         toast.info("Questions generated successfully! (Note: Database save failed)");
