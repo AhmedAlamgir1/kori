@@ -124,7 +124,7 @@ if (!process.env.OPENAI_API_KEY) {
   console.error("OPENAI_API_KEY is not set in environment variables");
   process.exit(1); // Exit if the critical key is missing
 }
-
+app.set("trust proxy", true);
 // Middleware
 app.use(securityMiddleware); // Security headers with Helmet
 app.use(requestLogger); // Request logging
