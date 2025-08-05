@@ -141,6 +141,7 @@ app.use(
       "http://51.20.127.51:4173",
       "http://54.80.242.58",
       "https://api.koriai.co",
+      "https://koriai.co",
     ], // Allow specific origins
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
