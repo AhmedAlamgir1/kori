@@ -25,16 +25,17 @@ const Settings = () => {
     const isConfirmed = window.confirm(
       "Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost."
     );
-    
+
     if (!isConfirmed) {
       return;
     }
-    
+
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const res = await deleteAccount(user?._id);
     if (res?.statusCode === 200) {
       toast.success("Account deleted successfully");
-      navigate("/login");
+      localStorage.clear();
+      navigate("/");
     }
   };
 
